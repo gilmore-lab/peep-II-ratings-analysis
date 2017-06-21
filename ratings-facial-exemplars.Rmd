@@ -1,0 +1,45 @@
+---
+title: "peep2-ratings-facial-expressions"
+date: "`r Sys.time()`"
+author: "Rick Gilmore"
+output:
+  github_document:
+    html_preview: true
+    toc: true
+    toc_depth: 3
+  html_notebook: default
+  pdf_document:
+    toc: true
+    toc_depth: 3
+---
+
+## Angry ratings
+
+| 1 | 2  | 3 | 4 |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/ang-1.jpg" width=150px/> | <img src="img/ang-2.jpg", width=150px/> | <img src="img/ang-3.jpg", width=150px/> | <img src="img/ang-4.jpg", width=150px/> |
+
+## Happy ratings
+
+| 1 | 2  | 3 | 4 |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/hap-1.jpg" width=150px/> | <img src="img/hap-2.jpg", width=150px/> | <img src="img/hap-3.jpg", width=150px/> | <img src="img/hap-4.jpg", width=150px/> |
+
+## Sad ratings
+
+| 1 | 2  | 3 | 4 |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/sad-1.jpg" width=150px/> | <img src="img/sad-2.jpg", width=150px/> | <img src="img/sad-3.jpg", width=150px/> | <img src="img/sad-4.jpg", width=150px/> |
+
+## Scared ratings
+
+| 1 | 2  | 3 | 4 |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/sca-1.jpg" width=150px/> | <img src="img/sca-2.jpg", width=150px/> | <img src="img/sca-3.jpg", width=150px/> | <img src="img/sca-4.jpg", width=150px/> 
+
+## How feel ratings
+
+| Neutral | Happy | Angry | Sad | Scared |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/sad-1.jpg" width=150px/> | <img src="img/hap-3.jpg", width=150px/> | <img src="img/ang-3.jpg", width=150px/> | <img src="img/sad-3.jpg", width=150px/> | <img src="img/sca-3.jpg", width=150px/> |
+| 1 | 2 | 3 | 4 | 5 |
