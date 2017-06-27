@@ -108,8 +108,6 @@ peep2.df %>%
   ggtitle("Angry prosody: Anger ratings")
 ```
 
-[Angry ratings legend](ratings-facial-exemplars.md)
-
 ### Happy ratings
 
 ```{r angry-prosody-happy-rating}

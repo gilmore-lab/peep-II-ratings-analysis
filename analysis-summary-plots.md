@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2017-06-27 16:52:20
+2017-06-27 16:54:46
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -178,8 +178,6 @@ peep2.df %>%
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-angry-ratings-1.png)
-
-[Angry ratings legend](ratings-facial-exemplars.md)
 
 ### Happy ratings
 
@@ -496,7 +494,7 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.0.143 on 2017-06-27 16:52:44. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.0.143 on 2017-06-27 16:55:10. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
