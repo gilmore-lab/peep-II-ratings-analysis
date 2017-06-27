@@ -348,6 +348,7 @@ This suggests that the angry scripts were perceived as angry, but not happy, sad
 2. Visualize the time series of ratings.
 3. Conduct cluster analyses on ratings to confirm classification.
 4. Merge with participant metadata.
+5. Add analysis of `know_speaker` variable.
 
 And here are some stylistic/low priority activities:
 

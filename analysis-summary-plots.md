@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2017-06-27 16:49:36
+2017-06-27 16:52:20
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -486,6 +486,7 @@ Next steps
 1.  Visualize the time series of ratings.
 2.  Conduct cluster analyses on ratings to confirm classification.
 3.  Merge with participant metadata.
+4.  Add analysis of `know_speaker` variable.
 
 And here are some stylistic/low priority activities:
 
@@ -495,7 +496,7 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.0.143 on 2017-06-27 16:50:00. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.0.143 on 2017-06-27 16:52:44. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
