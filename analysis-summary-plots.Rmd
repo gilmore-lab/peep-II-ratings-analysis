@@ -339,11 +339,97 @@ peep2.gathered.df %>%
 
 This suggests that the angry scripts were perceived as angry, but not happy, sad, or scary. The happy scripts were perceived as happy, but not angry, sad, or scary. The neutral scripts were perceived as moderately sad, but not angry, sad, or scary. The sad scripts were perceived as sad, but not angry, happy, or scary.
 
+## Time series of ratings
+
+During the scanning session, participants heard the scripts in a fixed temporal order. It would be useful to visualize the time series of the internal state they might have experienced assuming that state is equal to the post hoc ratings. So, let's imagine a data table that looks something like this:
+
+sound_index,intensity,rating_type
+
+Then we plot as separate time series the trial x *_rating values, perhaps like this:
+
+```{r, time-series-run-1}
+this_fam = 1
+this_run = 1
+title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
+peep2.gathered.df %>%
+  filter(fam_id == 1, run == 2) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity, color = target_prosody) +
+  geom_point(size = 1) +
+  geom_line() +
+  facet_grid(rating_type ~ .) +
+  ggtitle(title_text)
+```
+
+And here is run 2:
+
+```{r, time-series-run-2}
+this_fam = 1
+this_run = 2
+title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
+peep2.gathered.df %>%
+  filter(fam_id == 1, run == 2) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity, color = target_prosody) +
+  geom_point(size = 1) +
+  geom_line() +
+  facet_grid(rating_type ~ .) +
+  ggtitle(title_text)
+```
+
+Let's try combining the two runs into one plot
+
+```{r, time-series-all-runs-fam-1}
+this_fam = 1
+title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
+peep2.gathered.df %>%
+  filter(fam_id == 1) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity, color = target_prosody) +
+  geom_point(size = 1) +
+  geom_line() +
+  facet_grid(rating_type ~ run) +
+  ggtitle(title_text)
+```
+
+And here is family 2.
+
+```{r, time-series-all-runs-fam-2}
+this_fam = 2
+title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
+peep2.gathered.df %>%
+  filter(fam_id == this_fam) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity, color = target_prosody) +
+  geom_point(size = 1) +
+#  geom_line() +
+  geom_smooth(se = FALSE) +
+  facet_grid(rating_type ~ run) +
+  ggtitle(title_text)
+```
+
+Here's another version that adds a black step function to show how the ratings change stimulus to stimulus.
+
+```{r, time-series-all-runs-fam-2-smooth}
+this_fam = 2
+title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
+peep2.gathered.df %>%
+  filter(fam_id == this_fam) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  geom_smooth(se=FALSE, aes(color=target_prosody)) +
+  facet_grid(rating_type ~ run) +
+  ggtitle(title_text)
+```
+
 ## Next steps
 
 1. Combine ratings so that it is easier to compare how happy, angry, sad, scared each script was rated. Gather the ratings into a single variable in a new data frame. See <https://www.rstudio.com/resources/cheatsheets/>.
   - This is partially done as of 2017-06-27.
 2. Visualize the time series of ratings.
+  - This is partially done as of 2017-07-11.
 3. Conduct cluster analyses on ratings to confirm classification.
 4. Merge with participant metadata.
 5. Add analysis of `know_speaker` variable.
