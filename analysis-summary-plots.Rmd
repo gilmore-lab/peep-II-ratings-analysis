@@ -347,70 +347,24 @@ sound_index,intensity,rating_type
 
 Then we plot as separate time series the trial x *_rating values, perhaps like this:
 
-```{r, time-series-run-1}
+### Family 1
+
+```{r time-series-fam-1, echo=FALSE}
 this_fam = 1
-this_run = 1
-title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
-peep2.gathered.df %>%
-  filter(fam_id == 1, run == 2) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ .) +
-  ggtitle(title_text)
-```
-
-And here is run 2:
-
-```{r, time-series-run-2}
-this_fam = 1
-this_run = 2
-title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
-peep2.gathered.df %>%
-  filter(fam_id == 1, run == 2) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ .) +
-  ggtitle(title_text)
-```
-
-Let's try combining the two runs into one plot
-
-```{r, time-series-all-runs-fam-1}
-this_fam = 1
-title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
-peep2.gathered.df %>%
-  filter(fam_id == 1) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ run) +
-  ggtitle(title_text)
-```
-
-And here is family 2.
-
-```{r, time-series-all-runs-fam-2}
-this_fam = 2
 title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
 peep2.gathered.df %>%
   filter(fam_id == this_fam) %>%
   ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-#  geom_line() +
-  geom_smooth(se = FALSE) +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
   facet_grid(rating_type ~ run) +
   ggtitle(title_text)
 ```
 
-Here's another version that adds a black step function to show how the ratings change stimulus to stimulus.
+### Family 2
 
-```{r, time-series-all-runs-fam-2-smooth}
+```{r time-series-fam-2, echo=FALSE}
 this_fam = 2
 title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
 peep2.gathered.df %>%
@@ -419,9 +373,41 @@ peep2.gathered.df %>%
   aes(x=sound_index, y=intensity) +
   geom_step(color = 'black') +
   geom_point(size = 1, aes(color=target_prosody)) +
-  geom_smooth(se=FALSE, aes(color=target_prosody)) +
   facet_grid(rating_type ~ run) +
   ggtitle(title_text)
+this_fam = this_fam + 1
+```
+
+### Family 3
+
+```{r time-series-fam-3, echo=FALSE}
+# this_fam = 3
+title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
+peep2.gathered.df %>%
+  filter(fam_id == this_fam) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  facet_grid(rating_type ~ run) +
+  ggtitle(title_text)
+this_fam = this_fam + 1
+```
+
+### Family 4
+
+```{r time-series-fam-4, echo=FALSE}
+this_fam = 5
+title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
+peep2.gathered.df %>%
+  filter(fam_id == this_fam) %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  facet_grid(rating_type ~ run) +
+  ggtitle(title_text)
+this_fam = this_fam + 1
 ```
 
 ## Next steps

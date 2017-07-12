@@ -1,0 +1,217 @@
+---
+title: "by-participant"
+date: "`r Sys.time()`"
+author: "Rick Gilmore"
+output:
+  github_document:
+    html_preview: true
+    toc: true
+    toc_depth: 3
+  html_notebook: default
+  pdf_document:
+    toc: true
+    toc_depth: 3
+params: 
+  this_fam: 1 
+---
+
+# Family `r params$this_fam`
+
+```{r preliminaries, echo=FALSE}
+library(tidyverse)
+library(stringr)
+```
+
+```{r load-clean-data, echo=FALSE}
+peep2.data.dir <- "~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ visit\ behavioural\ data/"
+
+# List files and open one for inspection
+peep2.flist <- list.files(path = peep2.data.dir, 
+                          pattern = "\\.csv$", 
+                          full.names = TRUE)
+peep2.df.list <- lapply(peep2.flist, read.csv)
+peep2.df <- Reduce(function(x,y) merge(x,y, all =TRUE),
+                   peep2.df.list)
+
+# Pick character ranges by hand
+peep2.df$target_prosody <- str_sub(peep2.df$snd_file, 18, 20)
+peep2.df$script_name <- str_sub(peep2.df$snd_file, 22, 24)
+peep2.df$script_variation <- str_sub(peep2.df$snd_file, 
+                                     26, 26)
+
+# Create speaker_type
+peep2.df$speaker_id <- as.numeric(str_sub(peep2.df$snd_file,
+                                          14, 16))
+peep2.df$speaker_type <- rep("???", times=dim(peep2.df)[1])
+peep2.df$speaker_type[peep2.df$fam_id == peep2.df$speaker_id] = "mom"
+peep2.df$speaker_type[peep2.df$nov_id == peep2.df$speaker_id] = "unf"
+
+# Rename scared.rating for consistency with other ratings
+peep2.df %>% 
+  rename(sca.r = scared.rating,
+         ang.r = angry_rating,
+         hap.r = happy_rating,
+         sad.r = sad_rating) ->
+  peep2.df
+
+# Add names to how_feel
+feelings <- c("NA", "neu", "hap", "ang", "sad", "sca")
+peep2.df$how_feel <- feelings[peep2.df$how_feel+1]
+```
+
+```{r select-family, echo=FALSE}
+peep2.df %>%
+  filter(fam_id == as.numeric(params$this_fam)) ->
+  this_fam.df
+```
+
+```{r combine-intensity, echo=FALSE}
+# Combine intensity ratings
+this_fam_gathered.df <- gather(this_fam.df, 
+                              `ang.r`, 
+                              `hap.r`, 
+                              `sad.r`, 
+                              `sca.r`, 
+                              key = "rating_type", 
+                              value = "intensity")
+```
+
+# Time series
+
+## Rated intensity
+
+```{r time-series-rated-intensity}
+this_fam_gathered.df %>%
+  ggplot() +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  facet_grid(rating_type ~ run) +
+  theme(legend.position = "bottom")
+```
+
+## How feel?
+
+```{r time-series-how-feel}
+this_fam_gathered.df %>%
+  ggplot() +
+  aes(x=sound_index, y=how_feel, shape=speaker_type) +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  facet_grid(. ~ run) +
+  theme(legend.position = "bottom")
+```
+
+# Ratings by target prosody type
+
+## Angry prosody
+
+```{r angry-ratings}
+plot_ratings <- function(df = this_fam_gathered.df, prosody = "ang") {
+  df %>%
+  filter(target_prosody == prosody) %>%
+  ggplot() +
+  aes(x=rating_type, y=intensity, color=rating_type) +
+  geom_violin() +
+  facet_grid(. ~ speaker_type) +
+  geom_jitter(width=0.3, height=0) ->
+  p
+  p + theme(legend.position = "none")
+}
+
+p <- plot_ratings(prosody = "ang")
+p 
+```
+
+## Happy prosody
+
+```{r happy-ratings}
+p <- plot_ratings(prosody = "hap")
+p
+```
+
+## Sad prosody
+
+```{r sad-ratings}
+p <- plot_ratings(prosody = "sad")
+p
+```
+
+## Neutral prosody
+
+```{r neutral-ratings}
+p <- plot_ratings(prosody = "neu")
+p
+```
+
+## How feel by target prosody & speaker
+
+```{r how-feel-by-target-prosody}
+this_fam_gathered.df %>%
+  ggplot() +
+  aes(x=rating_type, y=intensity) +
+  geom_point(size = 1, aes(color=target_prosody)) +
+  facet_grid(speaker_type ~ how_feel) +
+  theme(legend.position = "bottom")
+```
+
+# Cluster analysis
+
+## Hierarchical clusters
+
+See <https://stackoverflow.com/questions/20343398/how-to-use-hclust-as-function-call-in-r>.
+
+```{r define-hclustfunc}
+hclustfunc <- function(x, method = "complete", dmeth = "euclidean") {    
+    hclust(dist(x, method = dmeth), method = method)
+}
+```
+
+```{r hclust-no-scared}
+# Drop scared because it wasn't reported for all participants
+this_fam.df %>%
+  select(sad.r, hap.r, ang.r, how_feel) %>%
+  hclustfunc() -> fit
+
+clust_lbl <- with(this_fam.df, 
+                  paste0(target_prosody, "-", speaker_type, "-", script_name))
+
+plot(fit, labels = clust_lbl)
+```
+
+## Multidimensional scaling
+
+```{r mds-no-scared}
+# Drop scared because it wasn't reported for all participants, assume k=2 dimensions
+
+d <- dist(this_fam.df[,7:10])
+mds_fit <- cmdscale(d, eig=TRUE, k=2)
+
+# New data frame for plotting
+mds.df <- data.frame(x = mds_fit$points[,1],
+                     y = mds_fit$points[,2],
+                     target_prosody = this_fam.df$target_prosody,
+                     script_name <- this_fam.df$script_name,
+    script_variation = this_fam.df$script_variation)
+
+mds.df %>%
+  ggplot() +
+  aes(x = x, y = y, color = target_prosody) +
+  geom_point(alpha = .5) +
+  theme(legend.position = "bottom")
+```
+
+## K-means
+
+```{r k-means-no-scared}
+set.seed(20)
+d <- dist(this_fam.df[,c('hap.r',
+                    'ang.r',
+                    'sad.r')])
+
+ratings_cluster <- kmeans(d, centers = 4, nstart = 20)
+table(ratings_cluster$cluster, this_fam.df$target_prosody)
+```
+
+
+
+

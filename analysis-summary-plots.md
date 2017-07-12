@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2017-07-11 08:27:46
+2017-07-11 15:09:16
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -31,6 +31,8 @@ Rick Gilmore
     -   [How feel ratings](#how-feel-ratings-3)
 -   [Comparative ratings](#comparative-ratings)
 -   [Time series of ratings](#time-series-of-ratings)
+    -   [Family 1](#family-1)
+    -   [Family 2](#family-2)
 -   [Next steps](#next-steps)
 -   [Resources](#resources)
 
@@ -101,13 +103,13 @@ peep2.df <- Reduce(function(x,y) merge(x,y, all =TRUE), peep2.df.list)
 str(peep2.df)
 ```
 
-    ## 'data.frame':    2896 obs. of  12 variables:
+    ## 'data.frame':    3226 obs. of  12 variables:
     ##  $ fam_id       : int  1 1 1 1 1 1 1 1 1 1 ...
     ##  $ nov_id       : int  6 6 6 6 6 6 6 6 6 6 ...
     ##  $ run          : int  1 1 1 1 1 1 1 1 1 1 ...
     ##  $ order        : int  4 4 4 4 4 4 4 4 4 4 ...
     ##  $ sound_index  : int  1 2 3 4 5 6 7 8 9 10 ...
-    ##  $ snd_file     : Factor w/ 1664 levels "wav/001/norm/001-ang-chk-a.wav",..: 27 8 17 32 11 18 5 16 26 1 ...
+    ##  $ snd_file     : Factor w/ 1696 levels "wav/001/norm/001-ang-chk-a.wav",..: 27 8 17 32 11 18 5 16 26 1 ...
     ##  $ happy_rating : int  2 4 1 1 1 1 1 1 1 1 ...
     ##  $ angry_rating : int  2 1 4 2 2 4 3 2 2 2 ...
     ##  $ sad_rating   : int  1 1 1 4 3 2 2 2 2 2 ...
@@ -484,91 +486,32 @@ sound\_index,intensity,rating\_type
 
 Then we plot as separate time series the trial x \*\_rating values, perhaps like this:
 
+### Family 1
+
+<!-- And here is run 2: -->
+<!-- Let's try combining the two runs into one plot -->
 ``` r
 this_fam = 1
-this_run = 1
-title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
-peep2.gathered.df %>%
-  filter(fam_id == 1, run == 2) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ .) +
-  ggtitle(title_text)
-```
-
-    ## Warning: Removed 33 rows containing missing values (geom_point).
-
-    ## Warning: Removed 33 rows containing missing values (geom_path).
-
-![](analysis-summary-plots_files/figure-markdown_github/time-series-run-1-1.png)
-
-And here is run 2:
-
-``` r
-this_fam = 1
-this_run = 2
-title_text = sprintf("Time series of rated intensity: Family %d / Run %d", this_fam, this_run)
-peep2.gathered.df %>%
-  filter(fam_id == 1, run == 2) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ .) +
-  ggtitle(title_text)
-```
-
-    ## Warning: Removed 33 rows containing missing values (geom_point).
-
-    ## Warning: Removed 33 rows containing missing values (geom_path).
-
-![](analysis-summary-plots_files/figure-markdown_github/time-series-run-2-1.png)
-
-Let's try combining the two runs into one plot
-
-``` r
-this_fam = 1
-title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
-peep2.gathered.df %>%
-  filter(fam_id == 1) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-  geom_line() +
-  facet_grid(rating_type ~ run) +
-  ggtitle(title_text)
-```
-
-    ## Warning: Removed 66 rows containing missing values (geom_point).
-
-    ## Warning: Removed 66 rows containing missing values (geom_path).
-
-![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-1-1.png)
-
-And here is family 2.
-
-``` r
-this_fam = 2
 title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
 peep2.gathered.df %>%
   filter(fam_id == this_fam) %>%
   ggplot() +
-  aes(x=sound_index, y=intensity, color = target_prosody) +
-  geom_point(size = 1) +
-#  geom_line() +
-  geom_smooth(se = FALSE) +
+  aes(x=sound_index, y=intensity) +
+  geom_step(color = 'black') +
+  geom_point(size = 1, aes(color=target_prosody)) +
   facet_grid(rating_type ~ run) +
   ggtitle(title_text)
 ```
 
-    ## `geom_smooth()` using method = 'loess'
+    ## Warning: Removed 66 rows containing missing values (geom_path).
 
-![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-2-1.png)
+    ## Warning: Removed 66 rows containing missing values (geom_point).
 
-Here's another version that adds a black step function to show how the ratings change stimulus to stimulus.
+![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-1-smooth-1.png)
 
+### Family 2
+
+<!-- And here is family 2. -->
 ``` r
 this_fam = 2
 title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
@@ -578,12 +521,9 @@ peep2.gathered.df %>%
   aes(x=sound_index, y=intensity) +
   geom_step(color = 'black') +
   geom_point(size = 1, aes(color=target_prosody)) +
-  geom_smooth(se=FALSE, aes(color=target_prosody)) +
   facet_grid(rating_type ~ run) +
   ggtitle(title_text)
 ```
-
-    ## `geom_smooth()` using method = 'loess'
 
 ![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-2-smooth-1.png)
 
@@ -610,7 +550,7 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.0.143 on 2017-07-11 08:28:18. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.0.143 on 2017-07-11 15:09:44. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
