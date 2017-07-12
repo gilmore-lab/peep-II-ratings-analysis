@@ -1,7 +1,7 @@
 by-participant
 ================
 Rick Gilmore
-2017-07-12 09:41:16
+2017-07-12 14:01:03
 
 -   [Family 11](#family-11)
 -   [Time series](#time-series)
@@ -33,7 +33,8 @@ this_fam_gathered.df %>%
   aes(x=sound_index, y=intensity) +
   geom_step(color = 'black') +
   geom_point(size = 1, aes(color=target_prosody)) +
-  facet_grid(rating_type ~ run)
+  facet_grid(rating_type ~ run) +
+  theme(legend.position = "bottom")
 ```
 
 ![](/Users/rick/github/gilmore-lab/peep-II-ratings-analysis/indiv_rpts/participant_11_files/figure-markdown_github/time-series-rated-intensity-1.png)
@@ -46,7 +47,8 @@ this_fam_gathered.df %>%
   ggplot() +
   aes(x=sound_index, y=how_feel, shape=speaker_type) +
   geom_point(size = 1, aes(color=target_prosody)) +
-  facet_grid(. ~ run)
+  facet_grid(. ~ run) +
+  theme(legend.position = "bottom")
 ```
 
 ![](/Users/rick/github/gilmore-lab/peep-II-ratings-analysis/indiv_rpts/participant_11_files/figure-markdown_github/time-series-how-feel-1.png)

@@ -1,0 +1,30 @@
+---
+title: "Individual Ratings"
+author: "Rick Gilmore"
+date: "7/12/2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Time series
+
+## Participant 1
+
+<div class="centered">
+<img src="indiv_rpts/participant_1_files/figure-markdown_github/time-series-rated-intensity-1.png"/>
+</div>
+
+## Participant 3
+
+<div class="centered">
+<img src="indiv_rpts/participant_3_files/figure-markdown_github/time-series-rated-intensity-1.png"/>
+</div>
+
+## Participant 5
+
+<div class="centered">
+<img src="indiv_rpts/participant_5_files/figure-markdown_github/time-series-rated-intensity-1.png"/>
+</div>
