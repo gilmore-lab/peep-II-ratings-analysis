@@ -1,4 +1,4 @@
-# make_ioslides.R
+# make_rating_slides.R
 #
 # Makes an *_presentation with all of the participants
 # and most of the figures. We create a .R file first with
@@ -19,7 +19,7 @@ file.create(fn)
 
 # Write header matter
 cat("#' ---\n", file = fn, append = TRUE)
-cat("#' title: 'PEEP-II Rating Figures'\n", file = fn, append = TRUE)
+cat("#' title: 'PEEP-II Ratings'\n", file = fn, append = TRUE)
 cat("#' author: 'Rick O. Gilmore'\n", file = fn, append = TRUE)
 cat("#' date: '`r Sys.time()`'\n", file = fn, append = TRUE)
 cat("#' output: github_document\n", file = fn, append = TRUE)
