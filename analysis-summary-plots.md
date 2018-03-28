@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2017-07-11 15:09:16
+2018-03-28 02:59:43
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -33,6 +33,8 @@ Rick Gilmore
 -   [Time series of ratings](#time-series-of-ratings)
     -   [Family 1](#family-1)
     -   [Family 2](#family-2)
+    -   [Family 3](#family-3)
+    -   [Family 4](#family-4)
 -   [Next steps](#next-steps)
 -   [Resources](#resources)
 
@@ -48,21 +50,6 @@ Load libraries.
 
 ``` r
 library(tidyverse)
-```
-
-    ## Loading tidyverse: ggplot2
-    ## Loading tidyverse: tibble
-    ## Loading tidyverse: tidyr
-    ## Loading tidyverse: readr
-    ## Loading tidyverse: purrr
-    ## Loading tidyverse: dplyr
-
-    ## Conflicts with tidy packages ----------------------------------------------
-
-    ## filter(): dplyr, stats
-    ## lag():    dplyr, stats
-
-``` r
 library(stringr)
 ```
 
@@ -103,13 +90,13 @@ peep2.df <- Reduce(function(x,y) merge(x,y, all =TRUE), peep2.df.list)
 str(peep2.df)
 ```
 
-    ## 'data.frame':    3226 obs. of  12 variables:
+    ## 'data.frame':    3358 obs. of  12 variables:
     ##  $ fam_id       : int  1 1 1 1 1 1 1 1 1 1 ...
     ##  $ nov_id       : int  6 6 6 6 6 6 6 6 6 6 ...
     ##  $ run          : int  1 1 1 1 1 1 1 1 1 1 ...
     ##  $ order        : int  4 4 4 4 4 4 4 4 4 4 ...
     ##  $ sound_index  : int  1 2 3 4 5 6 7 8 9 10 ...
-    ##  $ snd_file     : Factor w/ 1696 levels "wav/001/norm/001-ang-chk-a.wav",..: 27 8 17 32 11 18 5 16 26 1 ...
+    ##  $ snd_file     : Factor w/ 1728 levels "wav/001/norm/001-ang-chk-a.wav",..: 27 8 17 32 11 18 5 16 26 1 ...
     ##  $ happy_rating : int  2 4 1 1 1 1 1 1 1 1 ...
     ##  $ angry_rating : int  2 1 4 2 2 4 3 2 2 2 ...
     ##  $ sad_rating   : int  1 1 1 4 3 2 2 2 2 2 ...
@@ -488,44 +475,27 @@ Then we plot as separate time series the trial x \*\_rating values, perhaps like
 
 ### Family 1
 
-<!-- And here is run 2: -->
-<!-- Let's try combining the two runs into one plot -->
-``` r
-this_fam = 1
-title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
-peep2.gathered.df %>%
-  filter(fam_id == this_fam) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity) +
-  geom_step(color = 'black') +
-  geom_point(size = 1, aes(color=target_prosody)) +
-  facet_grid(rating_type ~ run) +
-  ggtitle(title_text)
-```
+    ## Warning: Removed 66 rows containing missing values (geom_path).
+
+    ## Warning: Removed 66 rows containing missing values (geom_point).
+
+![](analysis-summary-plots_files/figure-markdown_github/time-series-fam-1-1.png)
+
+### Family 2
+
+![](analysis-summary-plots_files/figure-markdown_github/time-series-fam-2-1.png)
+
+### Family 3
 
     ## Warning: Removed 66 rows containing missing values (geom_path).
 
     ## Warning: Removed 66 rows containing missing values (geom_point).
 
-![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-1-smooth-1.png)
+![](analysis-summary-plots_files/figure-markdown_github/time-series-fam-3-1.png)
 
-### Family 2
+### Family 4
 
-<!-- And here is family 2. -->
-``` r
-this_fam = 2
-title_text = sprintf("Time series of rated intensity: Family %d", this_fam)
-peep2.gathered.df %>%
-  filter(fam_id == this_fam) %>%
-  ggplot() +
-  aes(x=sound_index, y=intensity) +
-  geom_step(color = 'black') +
-  geom_point(size = 1, aes(color=target_prosody)) +
-  facet_grid(rating_type ~ run) +
-  ggtitle(title_text)
-```
-
-![](analysis-summary-plots_files/figure-markdown_github/time-series-all-runs-fam-2-smooth-1.png)
+![](analysis-summary-plots_files/figure-markdown_github/time-series-fam-4-1.png)
 
 Next steps
 ----------
@@ -550,18 +520,18 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.0.143 on 2017-07-11 15:09:44. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.0.143 on 2018-03-28 03:00:17. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
 ```
 
-    ## R version 3.4.0 (2017-04-21)
+    ## R version 3.4.4 (2018-03-15)
     ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-    ## Running under: macOS Sierra 10.12.5
+    ## Running under: macOS Sierra 10.12.6
     ## 
     ## Matrix products: default
-    ## BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
+    ## BLAS: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
     ## LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
     ## 
     ## locale:
@@ -571,18 +541,21 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] stringr_1.2.0   dplyr_0.5.0     purrr_0.2.2.2   readr_1.1.1    
-    ## [5] tidyr_0.6.3     tibble_1.3.0    ggplot2_2.2.1   tidyverse_1.1.1
+    ##  [1] bindrcpp_0.2    forcats_0.3.0   stringr_1.3.0   dplyr_0.7.4    
+    ##  [5] purrr_0.2.4     readr_1.1.1     tidyr_0.8.0     tibble_1.4.2   
+    ##  [9] ggplot2_2.2.1   tidyverse_1.2.1
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] Rcpp_0.12.10     cellranger_1.1.0 compiler_3.4.0   plyr_1.8.4      
-    ##  [5] forcats_0.2.0    tools_3.4.0      digest_0.6.12    lubridate_1.6.0 
-    ##  [9] jsonlite_1.4     evaluate_0.10    nlme_3.1-131     gtable_0.2.0    
-    ## [13] lattice_0.20-35  psych_1.7.3.21   DBI_0.6-1        yaml_2.1.14     
-    ## [17] parallel_3.4.0   haven_1.0.0      xml2_1.1.1       httr_1.2.1      
-    ## [21] knitr_1.16.4     hms_0.3          rprojroot_1.2    grid_3.4.0      
-    ## [25] R6_2.2.0         readxl_1.0.0     foreign_0.8-67   rmarkdown_1.5   
-    ## [29] modelr_0.1.0     reshape2_1.4.2   magrittr_1.5     backports_1.0.5 
-    ## [33] scales_0.4.1     htmltools_0.3.6  rvest_0.3.2      assertthat_0.2.0
-    ## [37] mnormt_1.5-5     colorspace_1.3-2 labeling_0.3     stringi_1.1.5   
-    ## [41] lazyeval_0.2.0   munsell_0.4.3    broom_0.4.2
+    ##  [1] Rcpp_0.12.16     cellranger_1.1.0 pillar_1.2.1     compiler_3.4.4  
+    ##  [5] plyr_1.8.4       bindr_0.1.1      base64enc_0.1-3  tools_3.4.4     
+    ##  [9] digest_0.6.15    lubridate_1.7.3  jsonlite_1.5     evaluate_0.10.1 
+    ## [13] nlme_3.1-131.1   gtable_0.2.0     lattice_0.20-35  pkgconfig_2.0.1 
+    ## [17] rlang_0.2.0      psych_1.7.8      cli_1.0.0        rstudioapi_0.7  
+    ## [21] yaml_2.1.18      parallel_3.4.4   haven_1.1.1      xml2_1.2.0      
+    ## [25] httr_1.3.1       knitr_1.20       hms_0.4.2        tidyselect_0.2.4
+    ## [29] rprojroot_1.3-2  grid_3.4.4       glue_1.2.0       R6_2.2.2        
+    ## [33] readxl_1.0.0     foreign_0.8-69   rmarkdown_1.9    modelr_0.1.1    
+    ## [37] reshape2_1.4.3   magrittr_1.5     backports_1.1.2  scales_0.5.0    
+    ## [41] htmltools_0.3.6  rvest_0.3.2      assertthat_0.2.0 mnormt_1.5-5    
+    ## [45] colorspace_1.3-2 labeling_0.3     stringi_1.1.7    lazyeval_0.2.1  
+    ## [49] munsell_0.4.3    broom_0.4.3      crayon_1.3.4
