@@ -37,6 +37,10 @@ peep2.data.dir <- "~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ v
 peep2.flist <- list.files(path = peep2.data.dir, pattern = "\\.csv$", full.names = TRUE)
 peep2.test.df <- read.csv(file = peep2.flist[1])
 str(peep2.test.df)
+
+# Color palette for plotting dots
+# 'neutral', 'happy', 'angry', 'sad', 'scared'
+emo_colors <- c("black", "green", "red", "blue", "yellow")
 ```
 
 It looks like the data files are well-structured and the variable names clear. **Note** that the ratings are on a [1,4] scale. I don't recall what the `know_speaker` ratings reflect now, but I will check.
@@ -56,6 +60,15 @@ It looks like the `scared.rating` occurs in some of the later data files, but wa
 peep2.df$target_prosody <- str_sub(peep2.df$snd_file, 18, 20)
 peep2.df$script_name <- str_sub(peep2.df$snd_file, 22, 24)
 peep2.df$script_variation <- str_sub(peep2.df$snd_file, 26, 26)
+```
+
+We also need to identify whether the speaker is familiar or novel.
+
+```{r extract-speaker-fam-from-snd-name}
+this_spkr <- as.numeric(str_sub(peep2.df$snd_file, 14, 16))
+peep2.df$speaker_fam <- (this_spkr == peep2.df$fam_id)
+peep2.df$speaker_famnov <- 'nov'
+peep2.df$speaker_famnov[peep2.df$speaker_fam] <- 'fam'
 ```
 
 ## Mapping between ratings and image icons
@@ -108,6 +121,33 @@ peep2.df %>%
   ggtitle("Angry prosody: Anger ratings")
 ```
 
+There is no obvious effect of the `script_name` or `script_variation`.
+Let's look at familiarity.
+
+```{r angry-prosody-anger-rating-by-spkr}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Anger ratings by speaker familiarity")
+```
+
+```{r angry-prosody-anger-ratings-speaker-script-boxplot}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = angry_rating) +
+  geom_boxplot() +
+  geom_jitter(width = 0.25, height = 0.1, alpha = 0.3) +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Angry prosody: Anger ratings by speaker familiarity")
+```
+
 ### Happy ratings
 
 ```{r angry-prosody-happy-rating}
@@ -123,6 +163,31 @@ peep2.df %>%
   ggtitle("Angry prosody: Happy ratings")
 ```
 
+Again, let's look at this by familiarity.
+
+```{r, angry}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Happy ratings by speaker familiarity")
+```
+
+```{r}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = happy_rating) +
+  geom_boxplot() +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Angry prosody: Happy ratings by speaker familiarity")
+```
+
 ### Sad ratings
 
 ```{r angry-prosody-sad-rating}
@@ -136,6 +201,21 @@ peep2.df %>%
   geom_histogram() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Angry prosody: Sad ratings")
+```
+
+By speaker familiarity...
+
+```{r angry-prosody-sad-ratings-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Sad ratings by speaker familiarity")
 ```
 
 ### Scared ratings
@@ -159,6 +239,14 @@ The `how_feel` variable codes on a [1,5] scale the participant's response to the
 
 The mapping from facial expression to image exemplar was as follows: 1 = neutral, 2 = mid-happy, 3 = mid-angry, 4= mid-sad, 5 = mid-scared.
 
+Let's add these labels to the `how_feel` so it's easier to see the pattern.
+
+```{r recode-how_feel}
+f <- factor(peep2.df$how_feel)
+levels(f) <- c(NA, 'neu', 'hap', 'ang', 'sad', 'sca')
+peep2.df$how_feel <- f
+```
+
 ```{r angry-prosody-how-feel}
 peep2.df %>%
   filter(target_prosody %in% "ang") %>%
@@ -167,8 +255,46 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
+  ggtitle("Angry prosody: How does it make you feel?")
+```
+
+```{r angry-prosody-how-feel-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = how_feel) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: How does it make you feel?")
+
+```
+
+```{r angry-prosody-anger-rating-how-feel-by-speaker-color}
+peep2.df %>%
+  filter(target_prosody %in% "ang",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = angry_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.20, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+Participants feel largely neutral about the angry voices, with a bit of anger and sadness.
+
+```{r angry-prosody-how-feel-speaker-violin}
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = how_feel, y = angry_rating) +
+  geom_violin() +
+  facet_grid(. ~ speaker_famnov) +
   ggtitle("Angry prosody: How does it make you feel?")
 ```
 
@@ -196,6 +322,31 @@ peep2.df %>%
   ggtitle("Happy prosody: Happy ratings")
 ```
 
+By speaker...
+
+```{r happy-prosody-happy-rating-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Happy ratings by speaker familiarity")
+```
+
+```{r happy-prosody-happy-rating-by-speaker-boxplot}
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = happy_rating) +
+  geom_boxplot() +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Happy prosody: Happy ratings by speaker familiarity")
+```
+
 ### Angry ratings
 
 ```{r happy-prosody-angry-rating}
@@ -211,6 +362,20 @@ peep2.df %>%
   ggtitle("Happy prosody: Angry ratings")
 ```
 
+```{r happy-prosody-angry-rating-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Angry ratings by speaker familiarity")
+
+```
+
 ### Sad ratings
 
 ```{r happy-prosody-sad-rating}
@@ -224,6 +389,19 @@ peep2.df %>%
   geom_histogram() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Happy prosody: Sad ratings")
+```
+
+```{r happy-prosody-sad-ratings-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Sad ratings by speaker familiarity")
 ```
 
 ### Scared ratings
@@ -251,10 +429,34 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Happy prosody: How does it make you feel?")
 ```
+
+```{r happy-prosody-how-feel-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: How does it make you feel?")
+```
+
+```{r happy-prosody-happy-rating-how-feel-color}
+peep2.df %>%
+  filter(target_prosody %in% "hap",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = happy_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.25, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+Participants feel largely happy or neutral about the happy prosodies, with more neutral feelings about the unfamiliar speaker.
 
 ## Sad prosody
 
@@ -273,6 +475,21 @@ peep2.df %>%
   ggtitle("Sad prosody: Sad ratings")
 ```
 
+By speaker...
+
+```{r sad-prosody-sad-ratings-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Sad ratings by speaker familiarity")
+```
+
 ### Angry ratings
 
 ```{r sad-prosody-angry-ratings}
@@ -286,6 +503,19 @@ peep2.df %>%
   geom_histogram() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Sad prosody: Angry ratings")
+```
+
+```{r sad-prosody-angry-ratings-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Angry ratings by speaker familiarity")
 ```
 
 ### Happy ratings
@@ -303,6 +533,19 @@ peep2.df %>%
   ggtitle("Sad prosody: Happy ratings")
 ```
 
+```{r sad-prosody-happy-ratings-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Happy ratings by speaker familiarity")
+```
+
 ### How feel ratings
 
 ```{r sad-prosody-how-feel}
@@ -313,10 +556,37 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Sad prosody: How does it make you feel?")
 ```
+
+```{r sad-prosody-how-feel-by-speaker}
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = how_feel) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: How does it make you feel?")
+```
+
+```{r sad-prosody-sad-intensity-how-feel-color}
+peep2.df %>%
+  filter(target_prosody %in% "sad",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = sad_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.25, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+Participants feel neutral or sad in response to the sad prosodies, again slightly more neutral about the unfamiliar speaker.
 
 ## Comparative ratings
 
@@ -337,7 +607,23 @@ peep2.gathered.df %>%
   geom_histogram()
 ```
 
-This suggests that the angry scripts were perceived as angry, but not happy, sad, or scary. The happy scripts were perceived as happy, but not angry, sad, or scary. The neutral scripts were perceived as moderately sad, but not angry, sad, or scary. The sad scripts were perceived as sad, but not angry, happy, or scary.
+```{r intensity-by-prosody-by-speaker}
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, fill = speaker_famnov ) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+This suggests that the angry scripts were perceived as angry, but not happy, sad, or scary. Familiar speakers were judged as having greater anger intensity, and lower happy and sad intensities.
+
+The happy scripts were perceived as happy, but not angry, sad, or scary. Familiar speakers were judged as more intensely happy than unfamiliar speakers and less intensely happy or sad.
+
+The sad scripts were perceived as sad, but not angry, happy, or scary. Curiously, the unfamiliar speakers were perceived as slightly sadder than the familiar speaker, and less angry or happy.
 
 ## Time series of ratings
 
@@ -412,8 +698,8 @@ this_fam = this_fam + 1
 
 ## Next steps
 
-1. Combine ratings so that it is easier to compare how happy, angry, sad, scared each script was rated. Gather the ratings into a single variable in a new data frame. See <https://www.rstudio.com/resources/cheatsheets/>.
-  - This is partially done as of 2017-06-27.
+1. ~~Combine ratings so that it is easier to compare how happy, angry, sad, scared each script was rated. Gather the ratings into a single variable in a new data frame. See <https://www.rstudio.com/resources/cheatsheets/>.~~
+  - ~~This is partially done as of 2017-06-27.~~
 2. Visualize the time series of ratings.
   - This is partially done as of 2017-07-11.
 3. Conduct cluster analyses on ratings to confirm classification.
@@ -427,9 +713,8 @@ And here are some stylistic/low priority activities:
 
 ## Resources
 
-This analysis was conducted in RStudio version 1.0.143 on `r Sys.time()`. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.1.453 on `r Sys.time()`. Additional information about the working environment is as follows:
 
 ```{r package-summary}
 sessionInfo()
 ```
-

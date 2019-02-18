@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2018-03-28 02:59:43
+2019-02-18 16:38:50
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -50,6 +50,24 @@ Load libraries.
 
 ``` r
 library(tidyverse)
+```
+
+    ## ── Attaching packages ─────────────────── tidyverse 1.2.1 ──
+
+    ## ✔ ggplot2 3.1.0     ✔ purrr   0.3.0
+    ## ✔ tibble  2.0.1     ✔ dplyr   0.7.8
+    ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
+    ## ✔ readr   1.3.1     ✔ forcats 0.3.0
+
+    ## Warning: package 'tibble' was built under R version 3.5.2
+
+    ## Warning: package 'purrr' was built under R version 3.5.2
+
+    ## ── Conflicts ────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+
+``` r
 library(stringr)
 ```
 
@@ -79,6 +97,12 @@ str(peep2.test.df)
     ##  $ sad_rating  : int  1 1 1 4 3 2 2 2 2 2 ...
     ##  $ how_feel    : int  1 1 1 1 1 2 2 3 1 1 ...
     ##  $ know_speaker: int  1 2 5 3 4 3 4 4 5 4 ...
+
+``` r
+# Color palette for plotting dots
+# 'neutral', 'happy', 'angry', 'sad', 'scared'
+emo_colors <- c("black", "green", "red", "blue", "yellow")
+```
 
 It looks like the data files are well-structured and the variable names clear. **Note** that the ratings are on a \[1,4\] scale. I don't recall what the `know_speaker` ratings reflect now, but I will check.
 
@@ -111,6 +135,15 @@ It looks like the `scared.rating` occurs in some of the later data files, but wa
 peep2.df$target_prosody <- str_sub(peep2.df$snd_file, 18, 20)
 peep2.df$script_name <- str_sub(peep2.df$snd_file, 22, 24)
 peep2.df$script_variation <- str_sub(peep2.df$snd_file, 26, 26)
+```
+
+We also need to identify whether the speaker is familiar or novel.
+
+``` r
+this_spkr <- as.numeric(str_sub(peep2.df$snd_file, 14, 16))
+peep2.df$speaker_fam <- (this_spkr == peep2.df$fam_id)
+peep2.df$speaker_famnov <- 'nov'
+peep2.df$speaker_famnov[peep2.df$speaker_fam] <- 'fam'
 ```
 
 Mapping between ratings and image icons
@@ -169,6 +202,38 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-angry-ratings-1.png)
 
+There is no obvious effect of the `script_name` or `script_variation`. Let's look at familiarity.
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Anger ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-anger-rating-by-spkr-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = angry_rating) +
+  geom_boxplot() +
+  geom_jitter(width = 0.25, height = 0.1, alpha = 0.3) +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Angry prosody: Anger ratings by speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-anger-ratings-speaker-script-boxplot-1.png)
+
 ### Happy ratings
 
 ``` r
@@ -188,6 +253,37 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-happy-rating-1.png)
 
+Again, let's look at this by familiarity.
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Happy ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = happy_rating) +
+  geom_boxplot() +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Angry prosody: Happy ratings by speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-1-1.png)
+
 ### Sad ratings
 
 ``` r
@@ -206,6 +302,25 @@ peep2.df %>%
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-sad-rating-1.png)
+
+By speaker familiarity...
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: Sad ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-sad-ratings-by-speaker-1.png)
 
 ### Scared ratings
 
@@ -234,6 +349,14 @@ The `how_feel` variable codes on a \[1,5\] scale the participant's response to t
 
 The mapping from facial expression to image exemplar was as follows: 1 = neutral, 2 = mid-happy, 3 = mid-angry, 4= mid-sad, 5 = mid-scared.
 
+Let's add these labels to the `how_feel` so it's easier to see the pattern.
+
+``` r
+f <- factor(peep2.df$how_feel)
+levels(f) <- c(NA, 'neu', 'hap', 'ang', 'sad', 'sca')
+peep2.df$how_feel <- f
+```
+
 ``` r
 peep2.df %>%
   filter(target_prosody %in% "ang") %>%
@@ -242,14 +365,55 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Angry prosody: How does it make you feel?")
 ```
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
 ![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-how-feel-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  # aes(x = script_name, y = how_feel) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: How does it make you feel?")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-how-feel-by-speaker-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = angry_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.20, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-anger-rating-how-feel-by-speaker-color-1.png)
+
+Participants feel largely neutral about the angry voices, with a bit of anger and sadness.
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "ang") %>%
+  ggplot() +
+  aes(x = how_feel, y = angry_rating) +
+  geom_violin() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Angry prosody: How does it make you feel?")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/angry-prosody-how-feel-speaker-violin-1.png)
 
 Remember...
 
@@ -280,6 +444,37 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-happy-rating-1.png)
 
+By speaker...
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Happy ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-happy-rating-by-speaker-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  aes(x = speaker_famnov, y = happy_rating) +
+  geom_boxplot() +
+  facet_grid(script_name ~ script_variation) +
+  ggtitle("Happy prosody: Happy ratings by speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-happy-rating-by-speaker-boxplot-1.png)
+
 ### Angry ratings
 
 ``` r
@@ -299,6 +494,23 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-angry-rating-1.png)
 
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Angry ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-angry-rating-by-speaker-1.png)
+
 ### Sad ratings
 
 ``` r
@@ -317,6 +529,23 @@ peep2.df %>%
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-sad-rating-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: Sad ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-sad-ratings-by-speaker-1.png)
 
 ### Scared ratings
 
@@ -349,14 +578,40 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Happy prosody: How does it make you feel?")
 ```
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
 ![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-how-feel-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap") %>%
+  ggplot() +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: How does it make you feel?")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-how-feel-by-speaker-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "hap",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = happy_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.25, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Happy prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/happy-prosody-happy-rating-how-feel-color-1.png)
+
+Participants feel largely happy or neutral about the happy prosodies, with more neutral feelings about the unfamiliar speaker.
 
 Sad prosody
 -----------
@@ -380,6 +635,25 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-sad-ratings-1.png)
 
+By speaker...
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = sad_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = sad_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Sad ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-sad-ratings-by-speaker-1.png)
+
 ### Angry ratings
 
 ``` r
@@ -398,6 +672,23 @@ peep2.df %>%
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
 ![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-angry-ratings-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = angry_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = angry_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Angry ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-angry-ratings-by-speaker-1.png)
 
 ### Happy ratings
 
@@ -418,6 +709,23 @@ peep2.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-happy-ratings-1.png)
 
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = happy_rating) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = happy_rating) +
+  geom_histogram() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: Happy ratings by speaker familiarity")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-happy-ratings-by-speaker-1.png)
+
 ### How feel ratings
 
 ``` r
@@ -428,14 +736,43 @@ peep2.df %>%
   # geom_violin() +
   # facet_grid(. ~ script_variation) +
   aes(x = how_feel) +
-  geom_histogram() +
+  geom_bar() +
   facet_grid(script_name ~ script_variation) +
   ggtitle("Sad prosody: How does it make you feel?")
 ```
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
 ![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-how-feel-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "sad") %>%
+  ggplot() +
+  # aes(x = script_name, y = how_feel) + 
+  # geom_violin() +
+  # facet_grid(. ~ script_variation) +
+  aes(x = how_feel) +
+  geom_bar() +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: How does it make you feel?")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-how-feel-by-speaker-1.png)
+
+``` r
+peep2.df %>%
+  filter(target_prosody %in% "sad",
+         how_feel %in% c('neu', 'hap', 'ang', 'sad', 'sca')) %>%
+  ggplot() +
+  aes(x = how_feel, y = sad_rating, color = how_feel) +
+  geom_jitter(width = 0.25, height = 0.25, alpha=0.3) +
+  facet_grid(. ~ speaker_famnov) +
+  ggtitle("Sad prosody: How does it make you feel?") +
+  scale_colour_manual(values = emo_colors)
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/sad-prosody-sad-intensity-how-feel-color-1.png)
+
+Participants feel neutral or sad in response to the sad prosodies, again slightly more neutral about the unfamiliar speaker.
 
 Comparative ratings
 -------------------
@@ -462,7 +799,25 @@ peep2.gathered.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/compare-ratings-1.png)
 
-This suggests that the angry scripts were perceived as angry, but not happy, sad, or scary. The happy scripts were perceived as happy, but not angry, sad, or scary. The neutral scripts were perceived as moderately sad, but not angry, sad, or scary. The sad scripts were perceived as sad, but not angry, happy, or scary.
+``` r
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, fill = speaker_famnov ) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/intensity-by-prosody-by-speaker-1.png)
+
+This suggests that the angry scripts were perceived as angry, but not happy, sad, or scary. Familiar speakers were judged as having greater anger intensity, and lower happy and sad intensities.
+
+The happy scripts were perceived as happy, but not angry, sad, or scary. Familiar speakers were judged as more intensely happy than unfamiliar speakers and less intensely happy or sad.
+
+The sad scripts were perceived as sad, but not angry, happy, or scary. Curiously, the unfamiliar speakers were perceived as slightly sadder than the familiar speaker, and less angry or happy.
 
 Time series of ratings
 ----------------------
@@ -500,9 +855,9 @@ Then we plot as separate time series the trial x \*\_rating values, perhaps like
 Next steps
 ----------
 
-1.  Combine ratings so that it is easier to compare how happy, angry, sad, scared each script was rated. Gather the ratings into a single variable in a new data frame. See <https://www.rstudio.com/resources/cheatsheets/>.
+1.  ~~Combine ratings so that it is easier to compare how happy, angry, sad, scared each script was rated. Gather the ratings into a single variable in a new data frame. See <https://www.rstudio.com/resources/cheatsheets/>.~~
 
--   This is partially done as of 2017-06-27.
+-   ~~This is partially done as of 2017-06-27.~~
 
 1.  Visualize the time series of ratings.
 
@@ -520,19 +875,19 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.0.143 on 2018-03-28 03:00:17. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.1.453 on 2019-02-18 16:39:46. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
 ```
 
-    ## R version 3.4.4 (2018-03-15)
+    ## R version 3.5.1 (2018-07-02)
     ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-    ## Running under: macOS Sierra 10.12.6
+    ## Running under: macOS  10.14.3
     ## 
     ## Matrix products: default
-    ## BLAS: /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
+    ## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
+    ## LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
     ## 
     ## locale:
     ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -541,21 +896,20 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ##  [1] bindrcpp_0.2    forcats_0.3.0   stringr_1.3.0   dplyr_0.7.4    
-    ##  [5] purrr_0.2.4     readr_1.1.1     tidyr_0.8.0     tibble_1.4.2   
-    ##  [9] ggplot2_2.2.1   tidyverse_1.2.1
+    ##  [1] bindrcpp_0.2.2  forcats_0.3.0   stringr_1.3.1   dplyr_0.7.8    
+    ##  [5] purrr_0.3.0     readr_1.3.1     tidyr_0.8.2     tibble_2.0.1   
+    ##  [9] ggplot2_3.1.0   tidyverse_1.2.1
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] Rcpp_0.12.16     cellranger_1.1.0 pillar_1.2.1     compiler_3.4.4  
-    ##  [5] plyr_1.8.4       bindr_0.1.1      base64enc_0.1-3  tools_3.4.4     
-    ##  [9] digest_0.6.15    lubridate_1.7.3  jsonlite_1.5     evaluate_0.10.1 
-    ## [13] nlme_3.1-131.1   gtable_0.2.0     lattice_0.20-35  pkgconfig_2.0.1 
-    ## [17] rlang_0.2.0      psych_1.7.8      cli_1.0.0        rstudioapi_0.7  
-    ## [21] yaml_2.1.18      parallel_3.4.4   haven_1.1.1      xml2_1.2.0      
-    ## [25] httr_1.3.1       knitr_1.20       hms_0.4.2        tidyselect_0.2.4
-    ## [29] rprojroot_1.3-2  grid_3.4.4       glue_1.2.0       R6_2.2.2        
-    ## [33] readxl_1.0.0     foreign_0.8-69   rmarkdown_1.9    modelr_0.1.1    
-    ## [37] reshape2_1.4.3   magrittr_1.5     backports_1.1.2  scales_0.5.0    
-    ## [41] htmltools_0.3.6  rvest_0.3.2      assertthat_0.2.0 mnormt_1.5-5    
-    ## [45] colorspace_1.3-2 labeling_0.3     stringi_1.1.7    lazyeval_0.2.1  
-    ## [49] munsell_0.4.3    broom_0.4.3      crayon_1.3.4
+    ##  [1] tidyselect_0.2.5 xfun_0.4         reshape2_1.4.3   haven_2.0.0     
+    ##  [5] lattice_0.20-38  colorspace_1.4-0 generics_0.0.2   htmltools_0.3.6 
+    ##  [9] yaml_2.2.0       rlang_0.3.1      pillar_1.3.1     glue_1.3.0      
+    ## [13] withr_2.1.2      modelr_0.1.2     readxl_1.2.0     bindr_0.1.1     
+    ## [17] plyr_1.8.4       munsell_0.5.0    gtable_0.2.0     cellranger_1.1.0
+    ## [21] rvest_0.3.2      evaluate_0.12    labeling_0.3     knitr_1.21      
+    ## [25] broom_0.5.1      Rcpp_1.0.0       scales_1.0.0     backports_1.1.3 
+    ## [29] jsonlite_1.6     hms_0.4.2        digest_0.6.18    stringi_1.2.4   
+    ## [33] grid_3.5.1       cli_1.0.1        tools_3.5.1      magrittr_1.5    
+    ## [37] lazyeval_0.2.1   crayon_1.3.4     pkgconfig_2.0.2  xml2_1.2.0      
+    ## [41] lubridate_1.7.4  assertthat_0.2.0 rmarkdown_1.11   httr_1.4.0      
+    ## [45] rstudioapi_0.8   R6_2.3.0         nlme_3.1-137     compiler_3.5.1
