@@ -607,6 +607,8 @@ peep2.gathered.df %>%
   geom_histogram()
 ```
 
+Remove the neutral and scared ratings.
+
 ```{r intensity-by-prosody-by-speaker}
 peep2.gathered.df %>%
   filter(target_prosody != 'neu') %>%
@@ -624,6 +626,155 @@ This suggests that the angry scripts were perceived as angry, but not happy, sad
 The happy scripts were perceived as happy, but not angry, sad, or scary. Familiar speakers were judged as more intensely happy than unfamiliar speakers and less intensely happy or sad.
 
 The sad scripts were perceived as sad, but not angry, happy, or scary. Curiously, the unfamiliar speakers were perceived as slightly sadder than the familiar speaker, and less angry or happy.
+
+Put the scared ratings back in.
+
+```{r intensity-by-prosody-by-speaker-ii}
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  # filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, fill = speaker_famnov ) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+Angry and happy prosodies do not seem to make children perceive the emotions as scary, but there is a hint that sad prosodies are rated as slightly more intensely scary.
+
+Could also try this with jitter.
+
+```{r}
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=speaker_famnov, shape = speaker_famnov, color = target_prosody) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_jitter(alpha=0.2, height=0.25, width=0.25) +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+### Single child
+
+Let's try one more focusing on a single child.
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  # filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=rating_type) +
+  facet_grid(target_prosody ~ speaker_famnov) +
+  #geom_point(position=position_dodge(width=0.2)) +
+  geom_boxplot() +
+  # geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'angry_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Anger intensity ratings")
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'happy_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Happy intensity ratings")
+
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'sad_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Sad intensity ratings")
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Scared intensity ratings")
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  #filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=speaker_famnov, y=intensity, fill=speaker_famnov, color=speaker_famnov) +
+  facet_grid(rating_type ~ target_prosody) +
+  #geom_violin() +
+  #geom_point() +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  #geom_jitter(width = 0.1, height = 0, alpha=0.5) +
+  ggtitle("Intensity ratings")
+```
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=speaker_famnov, shape = speaker_famnov, color = target_prosody) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_jitter(height=0.1, width=.1) +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+## Know speaker
+
+```{r}
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  #filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=speaker_famnov, y=know_speaker, fill=speaker_famnov, color=speaker_famnov) +
+  facet_grid(rating_type ~ target_prosody) +
+  #geom_violin() +
+  #geom_point() +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  #geom_jitter(width = 0.1, height = 0, alpha=0.5) +
+  ggtitle("Know speaker ratings")
+```
+
+It looks like the `know_speaker` variable is in [0,5], but I will need more information to properly plot and interpret these data.
 
 ## Time series of ratings
 

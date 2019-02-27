@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2019-02-18 16:38:50
+2019-02-27 11:07:50
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -30,6 +30,8 @@ Rick Gilmore
     -   [Happy ratings](#happy-ratings-3)
     -   [How feel ratings](#how-feel-ratings-3)
 -   [Comparative ratings](#comparative-ratings)
+    -   [Single child](#single-child)
+-   [Know speaker](#know-speaker)
 -   [Time series of ratings](#time-series-of-ratings)
     -   [Family 1](#family-1)
     -   [Family 2](#family-2)
@@ -52,18 +54,14 @@ Load libraries.
 library(tidyverse)
 ```
 
-    ## ── Attaching packages ─────────────────── tidyverse 1.2.1 ──
+    ## ── Attaching packages ────────── tidyverse 1.2.1 ──
 
-    ## ✔ ggplot2 3.1.0     ✔ purrr   0.3.0
-    ## ✔ tibble  2.0.1     ✔ dplyr   0.7.8
-    ## ✔ tidyr   0.8.2     ✔ stringr 1.3.1
-    ## ✔ readr   1.3.1     ✔ forcats 0.3.0
+    ## ✔ ggplot2 3.1.0       ✔ purrr   0.3.0  
+    ## ✔ tibble  2.0.1       ✔ dplyr   0.8.0.1
+    ## ✔ tidyr   0.8.2       ✔ stringr 1.4.0  
+    ## ✔ readr   1.3.1       ✔ forcats 0.3.0
 
-    ## Warning: package 'tibble' was built under R version 3.5.2
-
-    ## Warning: package 'purrr' was built under R version 3.5.2
-
-    ## ── Conflicts ────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ───────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
 
@@ -799,6 +797,8 @@ peep2.gathered.df %>%
 
 ![](analysis-summary-plots_files/figure-markdown_github/compare-ratings-1.png)
 
+Remove the neutral and scared ratings.
+
 ``` r
 peep2.gathered.df %>%
   filter(target_prosody != 'neu') %>%
@@ -818,6 +818,179 @@ This suggests that the angry scripts were perceived as angry, but not happy, sad
 The happy scripts were perceived as happy, but not angry, sad, or scary. Familiar speakers were judged as more intensely happy than unfamiliar speakers and less intensely happy or sad.
 
 The sad scripts were perceived as sad, but not angry, happy, or scary. Curiously, the unfamiliar speakers were perceived as slightly sadder than the familiar speaker, and less angry or happy.
+
+Put the scared ratings back in.
+
+``` r
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  # filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, fill = speaker_famnov ) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/intensity-by-prosody-by-speaker-ii-1.png)
+
+Angry and happy prosodies do not seem to make children perceive the emotions as scary, but there is a hint that sad prosodies are rated as slightly more intensely scary.
+
+Could also try this with jitter.
+
+``` r
+peep2.gathered.df %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=speaker_famnov, shape = speaker_famnov, color = target_prosody) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_jitter(alpha=0.2, height=0.25, width=0.25) +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-2-1.png)
+
+### Single child
+
+Let's try one more focusing on a single child.
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  # filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=rating_type) +
+  facet_grid(target_prosody ~ speaker_famnov) +
+  #geom_point(position=position_dodge(width=0.2)) +
+  geom_boxplot() +
+  # geom_bar(position="dodge") +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'angry_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Anger intensity ratings")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'happy_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Happy intensity ratings")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'sad_rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Sad intensity ratings")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  # filter(target_prosody != 'neu') %>%
+  filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=script_name, y=intensity, color=speaker_famnov, shape=speaker_famnov) +
+  facet_grid(target_prosody ~ script_variation) +
+  geom_point(position=position_dodge(width=0.15)) +
+  ggtitle("Scared intensity ratings")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  #filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=speaker_famnov, y=intensity, fill=speaker_famnov, color=speaker_famnov) +
+  facet_grid(rating_type ~ target_prosody) +
+  #geom_violin() +
+  #geom_point() +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  #geom_jitter(width = 0.1, height = 0, alpha=0.5) +
+  ggtitle("Intensity ratings")
+```
+
+    ## `stat_bindot()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-8-1.png)
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  filter(target_prosody != 'neu') %>%
+  filter(rating_type != 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=intensity, y=speaker_famnov, shape = speaker_famnov, color = target_prosody) +
+  facet_grid(rating_type ~ target_prosody) +
+  geom_jitter(height=0.1, width=.1) +
+  ggtitle("Intensity ratings by target emotion and speaker familiarity")
+```
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-9-1.png)
+
+Know speaker
+------------
+
+``` r
+peep2.gathered.df %>%
+  filter(fam_id == 2) %>%
+  #filter(rating_type == 'scared.rating') %>%
+  filter(intensity != 0) %>%
+  ggplot() +
+  aes(x=speaker_famnov, y=know_speaker, fill=speaker_famnov, color=speaker_famnov) +
+  facet_grid(rating_type ~ target_prosody) +
+  #geom_violin() +
+  #geom_point() +
+  geom_dotplot(binaxis = "y", stackdir = "center") +
+  #geom_jitter(width = 0.1, height = 0, alpha=0.5) +
+  ggtitle("Know speaker ratings")
+```
+
+    ## `stat_bindot()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](analysis-summary-plots_files/figure-markdown_github/unnamed-chunk-10-1.png)
+
+It looks like the `know_speaker` variable is in \[0,5\], but I will need more information to properly plot and interpret these data.
 
 Time series of ratings
 ----------------------
@@ -875,15 +1048,15 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.1.453 on 2019-02-18 16:39:46. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.1.453 on 2019-02-27 11:09:08. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
 ```
 
-    ## R version 3.5.1 (2018-07-02)
+    ## R version 3.5.2 (2018-12-20)
     ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-    ## Running under: macOS  10.14.3
+    ## Running under: macOS Mojave 10.14.3
     ## 
     ## Matrix products: default
     ## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
@@ -896,20 +1069,20 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ##  [1] bindrcpp_0.2.2  forcats_0.3.0   stringr_1.3.1   dplyr_0.7.8    
-    ##  [5] purrr_0.3.0     readr_1.3.1     tidyr_0.8.2     tibble_2.0.1   
-    ##  [9] ggplot2_3.1.0   tidyverse_1.2.1
+    ## [1] forcats_0.3.0   stringr_1.4.0   dplyr_0.8.0.1   purrr_0.3.0    
+    ## [5] readr_1.3.1     tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0  
+    ## [9] tidyverse_1.2.1
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] tidyselect_0.2.5 xfun_0.4         reshape2_1.4.3   haven_2.0.0     
-    ##  [5] lattice_0.20-38  colorspace_1.4-0 generics_0.0.2   htmltools_0.3.6 
-    ##  [9] yaml_2.2.0       rlang_0.3.1      pillar_1.3.1     glue_1.3.0      
-    ## [13] withr_2.1.2      modelr_0.1.2     readxl_1.2.0     bindr_0.1.1     
-    ## [17] plyr_1.8.4       munsell_0.5.0    gtable_0.2.0     cellranger_1.1.0
-    ## [21] rvest_0.3.2      evaluate_0.12    labeling_0.3     knitr_1.21      
-    ## [25] broom_0.5.1      Rcpp_1.0.0       scales_1.0.0     backports_1.1.3 
-    ## [29] jsonlite_1.6     hms_0.4.2        digest_0.6.18    stringi_1.2.4   
-    ## [33] grid_3.5.1       cli_1.0.1        tools_3.5.1      magrittr_1.5    
-    ## [37] lazyeval_0.2.1   crayon_1.3.4     pkgconfig_2.0.2  xml2_1.2.0      
-    ## [41] lubridate_1.7.4  assertthat_0.2.0 rmarkdown_1.11   httr_1.4.0      
-    ## [45] rstudioapi_0.8   R6_2.3.0         nlme_3.1-137     compiler_3.5.1
+    ##  [1] Rcpp_1.0.0       cellranger_1.1.0 pillar_1.3.1     compiler_3.5.2  
+    ##  [5] plyr_1.8.4       tools_3.5.2      digest_0.6.18    lubridate_1.7.4 
+    ##  [9] jsonlite_1.6     evaluate_0.13    nlme_3.1-137     gtable_0.2.0    
+    ## [13] lattice_0.20-38  pkgconfig_2.0.2  rlang_0.3.1      cli_1.0.1       
+    ## [17] rstudioapi_0.9.0 yaml_2.2.0       haven_2.0.0      xfun_0.4        
+    ## [21] withr_2.1.2      xml2_1.2.0       httr_1.4.0       knitr_1.21      
+    ## [25] hms_0.4.2        generics_0.0.2   grid_3.5.2       tidyselect_0.2.5
+    ## [29] glue_1.3.0       R6_2.4.0         readxl_1.2.0     rmarkdown_1.11  
+    ## [33] reshape2_1.4.3   modelr_0.1.2     magrittr_1.5     backports_1.1.3 
+    ## [37] scales_1.0.0     htmltools_0.3.6  rvest_0.3.2      assertthat_0.2.0
+    ## [41] colorspace_1.4-0 labeling_0.3     stringi_1.3.1    lazyeval_0.2.1  
+    ## [45] munsell_0.5.0    broom_0.5.1      crayon_1.3.4
