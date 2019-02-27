@@ -776,6 +776,15 @@ peep2.gathered.df %>%
 
 It looks like the `know_speaker` variable is in [0,5], but I will need more information to properly plot and interpret these data.
 
+## Analysis
+
+One approach is to think of the different intensity ratings as a set of outcome variables with speaker identity and target prosody as predictors.
+This analysis would test the hypothesis that there are different mean intensity ratings by target prosody or speaker identity.
+
+Another approach is to think of there being a single outcome variable--intensity rating--and the predictor variables are the type of rating, the target prosody, and speaker identity.
+This analysis would test whether mean intensity ratings differ as a function of these predictors.
+From the plots, we predict that there will be a two-way rating type by target prosody interaction and a possible three-way interaction involving speaker identity.
+
 ## Time series of ratings
 
 During the scanning session, participants heard the scripts in a fixed temporal order. It would be useful to visualize the time series of the internal state they might have experienced assuming that state is equal to the post hoc ratings. So, let's imagine a data table that looks something like this:

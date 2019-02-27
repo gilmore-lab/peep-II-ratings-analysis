@@ -1,7 +1,7 @@
 PEEP-II Behavioral Ratings
 ================
 Rick Gilmore
-2019-02-27 11:07:50
+2019-02-27 13:58:06
 
 -   [Purpose](#purpose)
 -   [Preliminaries](#preliminaries)
@@ -32,6 +32,7 @@ Rick Gilmore
 -   [Comparative ratings](#comparative-ratings)
     -   [Single child](#single-child)
 -   [Know speaker](#know-speaker)
+-   [Analysis](#analysis)
 -   [Time series of ratings](#time-series-of-ratings)
     -   [Family 1](#family-1)
     -   [Family 2](#family-2)
@@ -992,6 +993,13 @@ peep2.gathered.df %>%
 
 It looks like the `know_speaker` variable is in \[0,5\], but I will need more information to properly plot and interpret these data.
 
+Analysis
+--------
+
+One approach is to think of the different intensity ratings as a set of outcome variables with speaker identity and target prosody as predictors. This analysis would test the hypothesis that there are different mean intensity ratings by target prosody or speaker identity.
+
+Another approach is to think of there being a single outcome variable--intensity rating--and the predictor variables are the type of rating, the target prosody, and speaker identity. This analysis would test whether mean intensity ratings differ as a function of these predictors. From the plots, we predict that there will be a two-way rating type by target prosody interaction and a possible three-way interaction involving speaker identity.
+
 Time series of ratings
 ----------------------
 
@@ -1048,7 +1056,7 @@ And here are some stylistic/low priority activities:
 Resources
 ---------
 
-This analysis was conducted in RStudio version 1.1.453 on 2019-02-27 11:09:08. Additional information about the working environment is as follows:
+This analysis was conducted in RStudio version 1.1.453 on 2019-02-27 13:59:24. Additional information about the working environment is as follows:
 
 ``` r
 sessionInfo()
