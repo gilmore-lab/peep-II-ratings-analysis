@@ -12,7 +12,6 @@ output:
     code_folding: hide
 params:
   db_account: rogilmore@psu.edu
-  
 ---
 
 # Setup
@@ -25,7 +24,7 @@ library(R.matlab)
 library(googlesheets)
 ```
 
-This file uses the `tidyverse` and `R.matlab` packages.
+This file uses the `tidyverse`, `R.matlab`, and `googlesheets` packages.
 
 # Purpose
 
@@ -76,13 +75,27 @@ ratings <- ratings %>%
          order   = snd_file_extract[,5])
 ```
 
-Finally, we create a `familiar` variable based on the speaker.
+We create a `speaker_familiarity` variable based on the speaker.
 
 ```{r familiar}
 ratings <- ratings %>%
-  mutate(familiar_bool = (fam_id == as.numeric(speaker)))
+  mutate(familiar_bool = (fam_id == as.numeric(speaker))) %>%
+  mutate(speaker_familiarity = if_else(familiar_bool, 'fam', 'nov')) %>%
+  select(-familiar_bool)
+```
 
-ratings$familiar <- factor(as.numeric(ratings$familiar_bool), labels = c("nov", "fam"))
+It is also helpful to recode the `how_feel` variable with labels for the levels.
+The `how_feel` variable codes on a [1,5] scale the participant's response to the question: 'How did this make you feel?'
+The mapping from facial expression to image exemplar was as follows: 1 = neutral, 2 = mid-happy, 3 = mid-angry, 4= mid-sad, 5 = mid-scared.
+
+Let's add these labels to the `how_feel` so it's easier to see the pattern.
+
+```{r recode-how_feel}
+f <- factor(ratings$how_feel)
+
+# There are some missing ratings that have 0 values; recode to NA
+levels(f) <- c(NA, 'neu', 'hap', 'ang', 'sad', 'sca')
+ratings$how_feel <- f
 ```
 
 # Acoustic data
@@ -234,3 +247,20 @@ str(ratings_demo)
 ```
 
 There is some minor duplication.
+
+We'll export the file as a CSV to facilitate future analyses.
+
+```{r export-ratings-demo}
+write_csv(ratings_demo, 'data/csv/peep-II-ratings-demog.csv')
+```
+
+# Future work
+
+Here are some thoughts on future work:
+
+- A data dictionary should be generated.
+- `speaker` could be converted to a number, but the `char` value may make it easier to re-reference the recording.
+- `snd_file` could be converted to a URI referencing the file on Databrary.
+- A new variable could be created with a URI to the Databrary session for each session.
+- An automated QA procedure comparing the Databrary metadata to the metadata derived internally from the Googles sheet could (should) be carried out.
+- The combined data could be uploaded to a materials folder on the relevant Databrary volume.

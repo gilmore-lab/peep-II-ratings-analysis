@@ -1,0 +1,944 @@
+---
+title: "PEEP II Ratings Visualization for Individual"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: hide
+  github_document:
+    html_preview: true
+    toc: true
+    toc_depth: 3
+    number_sections: true
+params:
+  db_account: rogilmore@psu.edu
+---
+
+# Set-up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+```
+
+# Purpose
+
+This report generates some PEEP-II ratings data visualizations relevant for individual participants.
+
+# Import data
+
+The cleaned data can be found at `data/csv/peep-II-ratings-demog.csv`.
+
+```{r import-ratings-demo}
+ratings_demo <- read_csv('data/csv/peep-II-ratings-demog.csv')
+```
+
+# Preparing to visualize
+
+## Overall strategy
+
+For the *JECP* manuscript, we focus on intensity ratings for the target prosody.
+That is, we compare a child's `angry_rating` of recordings intended by the speaker to convey anger, and so forth.
+We ask:
+
+1. Do children rate their own mothers' voices as more intense than unfamiliar mothers' voices?
+2. Do acoustic properties account for children's intensity ratings?
+
+We are not especially concerned here with differences by `script`, `run`, or `order` although these may occur.
+Since we did not ask children to rate 'how un-emotional or neutral' a recording was, we drop consideration of ratings of `neu` or non-emotional prosody.
+
+## Create unitary `intensity` variable
+
+Create a single `intensity_rating` variable from the \{happy, angry, sad\}_rating variables and an `emotion_rated` variable to indicate the emotion the rater was evaluating at the time.
+
+```{r create-intensity-df}
+intensity <- ratings_demo %>%
+  tidyr::gather(., key = "emotion_rated", value = "intensity_rating", `happy_rating`:`sad_rating`) %>%
+  dplyr::select_all(.) %>%
+  dplyr::mutate(., emotion_rated = stringr::str_sub(stringr::str_extract(emotion_rated, 'happy|angry|sad'), 1, 3))
+str(intensity)
+```
+
+Next, we select the intensity ratings for circumstances when the `emotion_rated` equals the `prosody`.
+
+```{r filter-intensity-ratings-for-same-emo-as-target}
+intensity <- intensity %>%
+  filter(., emotion_rated == prosody)
+```
+
+Now we can move on to plotting.
+
+# Group plots
+
+We'll start with group plots since we've done these before.
+
+## Histogram of ratings by speaker and prosody
+
+```{r plot-bar-intensity-by-prosody-speaker}
+intensity <- intensity %>%
+  filter(intensity_rating != 0) 
+
+intensity %>%
+  ggplot(.) +
+  aes(x = intensity_rating, fill = speaker_familiarity) +
+  facet_grid(prosody ~ .) +
+  geom_bar(position = "dodge")
+```
+
+The grouped plot seems to work, so let's divide this up into panels to see finer-grained results.
+
+## Histogram by script and target prosody
+
+```{r plot-bar-intensity-by-prosody-script-speaker}
+intensity <- intensity %>%
+  filter(intensity_rating != 0) 
+
+intensity %>%
+  ggplot(.) +
+  aes(x = intensity_rating, fill = speaker_familiarity) +
+  facet_grid(prosody ~ script) +
+  geom_bar(position = "dodge")
+```
+
+There are some differences by script and emotion.
+The checkbook `chk` script shows flat ratings for happiness `hap`.
+The `sad` prosodies are rated less intensely sad by children, regardless of the script.
+The familiar `fam` speaker (mother) is generally rated as more intensely angry and happy across most of the scripts.
+
+# Individual level plots
+
+To really understand what's happening, we should look at plots by individuals.
+
+```{r}
+fam_ids <- unique(intensity$fam_id)
+```
+
+## Family 1 | `r paste0(1, ' of ', length(fam_ids))`
+
+There are two different script types, `a` and `b` for each script.
+So, there should be four data points in each of the panels above for each participant.
+Here's an attempt to visualize these for a single participant.
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == 1) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+```
+
+If raters *consistently* rated the familiar speaker as more intensely emotional, then the slope of these paired lines should be downward to the right.
+We see the expected pattern in five conditions: `hlp` + `ang`, `tlk` + `hap`, and to a lesser extent in `tlk` + `ang`, `chk` + `hap`, and `din` + `sad`.
+Several (4) conditions are a wash: `chk` + `ang`, `din` + `ang`, `din` + `hap`, `hlp` + `hap`.
+Three show the *opposite* pattern: `hlp` + `sad`, `tlk` + `sad`, and less so `din` + `sad`.
+
+
+
+```{r}
+i = 2
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', 
+                 fam_ids[i], ' | ', i, ' of ', length(fam_ids)))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
+
+## Family `r paste0('Family ', fam_ids[i], ' | ', i, ' of ', length(fam_ids))`
+
+```{r}
+intensity %>%
+  filter(intensity_rating != 0,
+         fam_id == fam_ids[i]) %>%
+  ggplot(.) +
+  aes(x = speaker_familiarity, y = intensity_rating, group = order) +
+  facet_grid(prosody ~ script) +
+  geom_point(aes(color = speaker_familiarity)) +
+  geom_line(aes(linetype = order)) +
+  scale_y_continuous(limits = c(1,4)) +
+  ggtitle(paste0('Family ', fam_ids[i]))
+i <- i + 1
+```
