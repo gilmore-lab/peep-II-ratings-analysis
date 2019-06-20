@@ -1,0 +1,236 @@
+---
+title: "PEEP II Ratings Acquire & Clean"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: hide
+params:
+  db_account: rogilmore@psu.edu
+  
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = FALSE)
+
+library(tidyverse)
+library(R.matlab)
+library(googlesheets)
+```
+
+This file uses the `tidyverse` and `R.matlab` packages.
+
+# Purpose
+
+1. Acquire behavioral ratings data for PEEP II study.
+2. Acquire acoustic data for PEEP II study.
+3. Acquire demographic data for PEEP II study.
+4. Clean data files and merge into one dataset for analysis.
+
+# Ratings data
+
+## Acquire
+
+As of 2019-06-20, ratings data are stored in a shared Box folder:
+
+"~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ visit\ behavioural\ data/"
+
+```{r acquire-ratings}
+data_dir <- "~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ visit\ behavioural\ data/"
+
+# List files and open one for inspection
+flist <- list.files(path = data_dir, 
+                          pattern = "\\.csv$", 
+                          full.names = TRUE)
+ratings_list <- lapply(flist, read.csv)
+ratings <- Reduce(function(x,y) merge(x,y, all =TRUE), ratings_list)
+```
+
+## Clean
+
+There are several cleaning tasks for these data:
+
+1. Change `scared.rating` to `scared_rating` for consistency with other file names.
+2. Parse `snd_file` so that the target prosody, e.g., `ang`, script, e.g, `chk`, and order, e.g., `a`, are separate columns.
+3. Parse `snd_file` so that the speaker IDs can be turned into `fam` or `nov` codes indicating whether the mother or a novel mother is speaking.
+
+```{r clean-ratings}
+ratings <- ratings %>%
+  rename(scared_rating = scared.rating)
+
+# Parse group 1 = speaker, group 2 = prosody, group 3 = script, group 4 = order
+snd_file_regex <- "([0-9]+)-([a-z]+)-([a-z]+)-([ab])"
+snd_file_extract <- stringr::str_match(ratings$snd_file, snd_file_regex)
+
+ratings <- ratings %>%
+  mutate(speaker = snd_file_extract[,2],
+         prosody = snd_file_extract[,3],
+         script  = snd_file_extract[,4],
+         order   = snd_file_extract[,5])
+```
+
+Finally, we create a `familiar` variable based on the speaker.
+
+```{r familiar}
+ratings <- ratings %>%
+  mutate(familiar_bool = (fam_id == as.numeric(speaker)))
+
+ratings$familiar <- factor(as.numeric(ratings$familiar_bool), labels = c("nov", "fam"))
+```
+
+# Acoustic data
+
+## Acquire
+
+The acoustic data are in a shared Box folder:
+
+`~/Box\ Sync/b-peep-project Shared/PEEP2\ acoustics/`
+
+There is a folder for each subject:
+
+```{r list-acoustic-files}
+acoustic_dir <- "~/Box\ Sync/b-peep-project Shared/PEEP2\ acoustics/" 
+list.files(acoustic_dir)
+```
+
+Within each subject directory, there are subdirectories:
+
+```{r}
+list.files(paste0(acoustic_dir, "/001"))
+```
+
+The `data/` directory contains additional subdirectories:
+
+```{r}
+list.files(paste0(acoustic_dir, "/001/data"))
+```
+
+These concern the various acoustic measures.
+Drilling down into the F0 directory, we see the following:
+
+```{r}
+list.files(paste0(acoustic_dir, "/001/data/F0/F0/mean"))
+```
+
+There is a MATLAB file with the raw data.
+To attempt to read it, I installed the `R.matlab` package via `install.packages("R.matlab")`.
+
+```{r read-F0-matlab}
+f0_001 <- R.matlab::readMat(paste0(acoustic_dir, "/001/data/F0/F0/mean/F0.mat"))
+f0_001
+```
+
+This is an 8x4x4 array. There were 4 scripts x 2 versions x 4 target prosodies. 
+That gives $n=32$ exemplars.
+Could the additional 4 data points refer to the F0 for each *utterance* within the exemplar, assuming that there are four utterances/script.
+I'm stuck until I figure this out.
+
+Once the meaning of the dimensions is clear, then it may be necessary to average the per-utterance values to create a per/script mean and SD, as these were the variables we used in the JECP manuscript.
+
+# Demographic data
+
+## Acquire
+
+The demographic data for the study are stored in a Google sheet.
+This requires using the `googlesheets` library.
+
+*Note*: When run using `rmarkdown::render()`, the `googlesheets` commands must authenticate to Google in order to grant a user access to the sheet.
+This means that the user must authenticate to Google *outside* of the typical rendering workflow.
+
+Note also that family 007 was apparently dropped.
+I do not know why, but there are no ratings data for 007 either, so everything checks out.
+
+```{r import-demographics-from-Google}
+dropped_subs <- "007"
+demog_sheet <- gs_title("PEEP II Data Management")
+
+demog_full <- demog_sheet %>%
+  gs_read(ws = 1) %>%  
+  filter(`Completed/Scheduled Visit 2` == "completed",
+         `Completed/Scheduled EAR Day` == "completed",
+         `Completed/Scheduled Visit 3` == "completed",
+         !(`ID Number` %in% dropped_subs))
+
+str(demog_full)
+```
+
+There are many more variables in the spreadsheet than we need for this analysis.
+We'll trim it to the most important ones for our current purposes.
+
+```{r demog-trim}
+demog <- demog_full %>%
+  select(`ID Number`, `Two Parent Family?`, 
+         `Mother Gender`,`Mother Race`, `Mother Latina?`,
+         `Other Parent Gender`, `Other Parent Race`,
+         `Other Parent Latino?`,
+         `Target Child DOB`, `Target Child Gender`,
+         `Target Child Race`, `Target Child Latino?`)
+```
+
+## Clean
+
+Our goals for cleaning these data are as follows:
+
+1. Consider renaming the variables to make them shorter, lower case, and consistent with the naming scheme used for the ratings data.
+2. Calculate an age-at-test variable for the target child.
+
+```{r clean-demog}
+demog <- demog %>%
+  rename(two_parent_fam = `Two Parent Family?`,
+         mother_gender = `Mother Gender`,
+         mother_race = `Mother Race`,
+         mother_latinx = `Mother Latina?`,
+         other_gender = `Other Parent Gender`,
+         other_race = `Other Parent Race`,
+         other_latinx = `Other Parent Latino?`,
+         child_dob = `Target Child DOB`,
+         child_gender = `Target Child Gender`,
+         child_race = `Target Child Race`,
+         child_latinx = `Target Child Latino?`) %>%
+  mutate(fam_id = as.numeric(`ID Number`))
+```
+
+In order to calculate the age-at-test, I will need to import the test date for Visit 1 from sheet 3, 'Visit 1'.
+
+```{r import-visit-1}
+visit_1 <- gs_read(ss = demog_sheet, ws = 3)
+
+visit_1 <- visit_1 %>%
+  select(`Subject ID`, `Child Age at Visit (years, months)`)
+```
+
+Now, we can drop the participants who aren't in the sample of ratings, and normalize the age variable.
+
+```{r select-participants-with-ratings}
+participants_with_ratings <- unique(ratings$fam_id)
+
+visit_1 <- visit_1 %>%
+  filter(., as.numeric(`Subject ID`) %in% participants_with_ratings) %>%
+  rename(., child_yrs = `Child Age at Visit (years, months)`) %>%
+  mutate(., fam_id = as.numeric(`Subject ID`))
+```
+
+# Merge
+
+## Ratings with demographics
+
+Since I am stymied on the acoustics measures, let's merge the data we have.
+
+```{r}
+ratings_demo <- left_join(ratings, demog, by = "fam_id")
+ratings_demo <- left_join(ratings_demo, visit_1, by = "fam_id")
+
+# Now drop duplicate variables for ID and DOB
+ratings_demo <- ratings_demo %>%
+  select(-child_dob, -`ID Number`, -`Subject ID`)
+str(ratings_demo)
+```
+
+There is some minor duplication.

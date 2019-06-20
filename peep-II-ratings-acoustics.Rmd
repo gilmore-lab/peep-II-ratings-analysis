@@ -1,0 +1,172 @@
+---
+title: "PEEP II Ratings & Acoustics"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: show
+params:
+  db_account: rogilmore@psu.edu
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(databraryapi)
+```
+
+# Purpose
+
+1. To create a reproducible data cleaning and visualization pipeline.
+2. To visualize the PEEP-II ratings and acoustic data.
+3. To conduct confirmatory and exploratory analyses on these data.
+
+# Data acquisition
+
+## Import locally
+
+The data are in `data/csv/long_speaker_acous_ratings_6.14.19.csv'.
+
+```{r import-data-locally}
+ratings_acoustics <- readr::read_csv("data/csv/long_speaker_acous_ratings_6.14.19.csv")
+```
+
+## Import from Databrary
+
+This is not working yet.
+
+```{r}
+peep_II_vol <- 339
+```
+
+# Clean
+
+## Inspect
+
+```{r inspect}
+str(ratings_acoustics)
+```
+
+`Subject` is an integer. Does it correspond to the `Participant ID`?
+
+```{r}
+unique(ratings_acoustics$Subject)
+length(unique(ratings_acoustics$Subject))
+```
+
+Yes, it appears to be the case that `Subject` == `Participant ID`.
+This corresponds to the `session_name` variable in the Databrary volume.
+The Databrary volume (https://nyu.databrary.org/volume/339) only has recordings up through participant 53, however.
+
+## Add demographic data
+
+We can add demographic data by merging the `ratings_acoustics` file with the Databrary spreadsheet.
+
+```{r load-databrary-spreadsheet}
+# Login required
+databraryapi::login_db(email = params$db_account)
+
+# Download session CSV
+vol_39_demo <- databraryapi::download_session_csv(vol_id = peep_II_vol)
+str(vol_39_demo)
+```
+
+The `session_name` variable seems to correspond with the dyad's participant number, as deduced previously.
+
+```{r clean-databary-demo-data}
+vol_39_clean <- vol_39_demo %>%
+  dplyr::filter(!is.na(session_name)) %>% # drop materials
+  dplyr::select(-participant1.birthdate, -participant2.birthdate) %>% # Birthdates
+  dplyr::select(session_name,
+                participant1.gender, participant1.race, participant1.ethnicity,
+                participant2.race, participant2.ethnicity) %>%
+  dplyr::rename(child_gender = participant1.gender, 
+                child_race = participant1.race,
+                child_ethnicity = participant1.ethnicity,
+                mother_race = participant2.race,
+                mother_ethnicity = participant2.ethnicity)
+```
+
+Now, we merge the ratings data with the demographic data.
+
+```{r merge-ratings-demo}
+ratings_acoustics_all <- dplyr::left_join(ratings_acoustics, vol_39_clean, by = c("Subject" = "session_name"))
+```
+
+## Refactor to make names explicit
+
+1. Speaker is in \{0,1\}. Which is familiar and which novel?
+2. Prosody is in \{1,2,3\}. How do these map to happy, angry, sad?
+I suspect that 1=happy, 2=angry, and 3=sad.
+3. Units of F0_mean must be Hz. So must F0_SD. What about speech rate?
+
+## Add back or acquire script and order variables
+
+# Visualizations
+
+## Intensity ratings by target prosody
+
+Create a single variable from the \{Happy, Angry, Sad\}_Rating variables.
+
+```{r}
+ratings_acoustics_gathered <- ratings_acoustics_all %>%
+  tidyr::gather(., key = "Prosody", value = "Intensity_Rating", 4:6) %>%
+  dplyr::select_all() %>%
+  dplyr::mutate(., Target_Prosody = stringr::str_extract(Prosody, 'Happy|Angry|Sad'))
+
+str(ratings_acoustics_gathered)
+```
+
+### Intensity_Rating by Target_Prosody by Speaker
+
+```{r plot-bar-intensity-by-prosody-speaker}
+ratings_acoustics_gathered$Speaker <- factor(ratings_acoustics_gathered$Speaker)
+ratings_acoustics_gathered <- ratings_acoustics_gathered %>%
+  filter(Intensity_Rating != 0) 
+
+ratings_acoustics_gathered %>%
+  ggplot(.) +
+  aes(x = Intensity_Rating, fill = Speaker) +
+  facet_grid(Target_Prosody ~ .) +
+  geom_bar(position = "dodge")
+```
+
+It looks like this is reverse-coded--1=4, etc.
+Let's assume it is and transform it.
+
+```{r}
+ratings_acoustics_gathered$Intensity_Rating <- 5 - ratings_acoustics_gathered$Intensity_Rating
+```
+
+
+### Jitter plot of Intensity_Ratings by Target_Prosody by Speaker
+
+```{r plot-jitter-intensity-by-prosody-by-speaker}
+ratings_acoustics_gathered %>%
+  filter(Intensity_Rating != 0) %>%
+  ggplot(.) +
+  aes(x = Target_Prosody, y = Intensity_Rating, color = Target_Prosody, group = Subject) +
+  geom_point(position = "jitter", alpha = .2) +
+  facet_grid(. ~ Speaker)
+```
+
+```{r anova-intensity-by-ratings-speaker}
+
+
+```
+
+
+## Differences between speakers
+
+The difference between speakers in perceived intensity ratings should be on [-3,3].
+We need to 'spread' the values to calculate this.
+But we can't do it because the Speaker and Target_Prosody values aren't unique without the Script and Order variables.
