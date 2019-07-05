@@ -7,7 +7,7 @@ The MATLAB code for presenting audio recordings both in the magnet and outside i
 
 ## Contents
 
-
+- [HTML report](https://https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-data-dictionary.html) with data file specifications and definitions. [Rmd](https://https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-data-dictionary.Rmd)
 - [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-visualization-individual.html) showing plots of individual participants. [Rmd](https://github.com/gilmore-lab/peep-II-ratings-analysis/peep-II-ratings-visualization-individual.Rmd)
 - [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-acquire-clean.html) showing the acquisition and cleaning steps involved in the child ratings data. [Rmd code](peep-II-ratings-acquire-clean.Rmd)
 - Images shown to the participants to make intensity ratings in [HTML](ratings-facial-exemplars.nb.html), [Rmd](ratings-facial-exemplars.Rmd), and [Markdown](ratings-facial-exemplars.md) formats. To regenerate, run `rmarkdown::render("ratings-facial-exemplars.Rmd")`.
