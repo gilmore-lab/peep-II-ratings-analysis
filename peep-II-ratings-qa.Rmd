@@ -1,0 +1,103 @@
+---
+title: "PEEP II Ratings Quality Assurance"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: show
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+```
+
+# Purpose
+
+1. To conduct a quality assurance (QA) review on the PEEP II behavioral ratings data.
+
+# Create list of potential data files
+
+As of 2019-06-20, ratings data are stored in a shared Box folder:
+
+"~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ visit\ behavioural\ data/"
+
+I have prior reason to believe that families 19 and 32 were run on the same set of sounds twice.
+So, let's evaluate the overall compliance with the protocol.
+
+```{r list-rating-files}
+data_dir <- "~/Box\ Sync/b-peep-project\ Shared/PEEP2\ data/PEEP2\ Home\ visit\ behavioural\ data/"
+
+# List files
+flist <- list.files(path = data_dir, 
+                          pattern = "^rating")
+```
+
+Create a data.frame by parsing the file names.
+
+```{r}
+peep_II_files <- data_frame(fn = flist,
+                            fam_id = stringr::str_sub(flist, 8, 10),
+                            test_HHMM = stringr::str_sub(flist, 23, 26),
+                            run_num = stringr::str_sub(flist, 32, 32),
+                            order_num = stringr::str_sub(flist, 40, 40))
+peep_II_files
+```
+
+Now we can 'spread' the data to see if rows with different `test_HHMM` have different `run_num` numbers (they should) but the *same* `order_num` number.
+
+
+```{r}
+test_runs_orders <- function(id, df) {
+  this_subset <- dplyr::filter(df, fam_id == id)
+  
+  message(paste0('QA on family ', id))
+  
+  # Two data files
+  if (dim(this_subset)[1] == 2) {
+    message('Two data files: \tPASS')
+  } else {
+    warning('NOT Two data files: \tFAIL')
+  }
+  
+  if (this_subset$test_HHMM[1] != this_subset$test_HHMM[2]) {
+    message('Test times different: \tPASS')
+    } else {
+    warning('Time times identical: \tFAIL')
+    }
+  
+  if(this_subset$run_num[1] != this_subset$run_num[2]) {
+    message('Run numbers not equal: \tPASS')
+  } else {
+    warning('Run numbers equal: \tFAIL\n')
+  }
+
+  if(this_subset$order_num[1] == this_subset$order_num[2]) {
+    message('Order numbers equal: \tPASS')
+  } else {
+    warning('Order numbers not equal: \tFAIL')
+  }
+  message("\n----------------\n")
+}
+
+test_runs_orders('032', peep_II_files)
+```
+
+Run this QA script across all fam_id's.
+
+```{r}
+fam_ids <- unique(peep_II_files$fam_id)
+lapply(fam_ids, test_runs_orders, peep_II_files)
+```
+
+On the basis of this evaluation, `fam_id` 019 and `fam_id` 032 must be dealt with separately.
+I suggest we take the first of the two rating runs.
