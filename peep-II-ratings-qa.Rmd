@@ -101,3 +101,178 @@ lapply(fam_ids, test_runs_orders, peep_II_files)
 
 On the basis of this evaluation, `fam_id` 019 and `fam_id` 032 must be dealt with separately.
 I suggest we take the first of the two rating runs.
+
+## Within file QA
+
+Each data file should have the following characteristics:
+
+1. $n=32$ trials
+2. All of the appropriate fields: \{fam_id, nov_id, run, order, sound_index, snd_file, happy_rating, sad_rating, scared-rating, how_feel, know_speaker\}.
+3. Values within fields should be within the following ranges:
+    a. fam_id: [000...999]
+    b. nov_id: != fam_id and in [000...999]
+    c. run: [1,2]
+    d. order: [1,2,3,4]
+    e. sound_index: [1..32]
+    f. snd_file: string and properly structured
+    g. happy_rating in [0...4]
+    h. angry_rating in [0...4]
+    i. sad_rating in [0...4]
+    j. scared-rating in [0...4]
+    k. how_feel in [0...5]
+    l. know_speaker in [0...2]
+    
+I will write functions for each of these criteria. 
+
+```{r}
+n_trials <- function(data_file) {
+  dim(data_file)[1] == 33 # 32 trials + header
+}
+
+full_flist <- list.files(path = data_dir, 
+                          pattern = "^rating", full.names = TRUE)
+n_trials(read_csv(full_flist[1]))
+```
+
+```{r}
+missing_fields <- function(data_file) {
+  all_fields <- c('fam_id', 'nov_id', 'run', 'order', 'sound_index', 'snd_file', 'happy_rating', 'angry_rating', 'sad_rating', 'scared-rating', 'how_feel', 'know_speaker')
+  if (sum(!(all_fields %in% names(data_file)))) {
+    return(all_fields[!(all_fields %in% names(data_file))])
+  } else {
+    return(NA)
+  }
+}
+
+missing_fields(read_csv(full_flist[3]))
+```
+
+```{r}
+fam_id_not_in_range <- function(data_file) {
+  in_range <- (as.numeric(data_file$fam_id) >= 0 & as.numeric(data_file$fam_id) <= 999)
+  if(sum(!(in_range))) {
+    return(data_file$fam_id[!in_range])
+  } else {
+    return(NA)
+  }
+}
+
+fam_id_not_in_range(read_csv(full_flist[1]))
+```
+
+```{r}
+nov_id_not_valid <- function(data_file) {
+  in_range <- (as.numeric(data_file$nov_id) >= 0 & as.numeric(data_file$nov_id) <= 999)
+  not_eq_fam_id <- (as.numeric(data_file$nov_id)) != (as.numeric(data_file$fam_id))
+  nov_id_valid <- in_range & not_eq_fam_id
+  nov_id_valid
+  
+  if(sum(!(nov_id_valid))) {
+    return(data_file$nov_id[!nov_id_valid])
+  } else {
+    return(NA)
+  }
+}
+
+nov_id_not_valid(read_csv(full_flist[1]))
+```
+
+```{r}
+numeric_rating_out_of_range <- function(data_file, field_name, min_val, max_val) {
+  this_field <- data_file[, field_name == names(data_file)]
+  in_range <- (this_field >= min_val) & (this_field <= max_val)
+  
+  if (sum(!in_range)) {
+    return(this_field[!in_range,])
+  } else {
+    return(NA)
+  }
+}
+
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'happy_rating', 0, 4)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'sad_rating', 0, 4)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'scared-rating', 0, 4)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'angry_rating', 0, 4)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'run', 0, 2)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'order', 0, 4)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'how_feel', 0, 5)
+numeric_rating_out_of_range(read_csv(full_flist[1]), 'know_speaker', 0, 2)
+```
+
+Now, we are ready to run these across all the files.
+
+```{r}
+files_as_list <- lapply(full_flist, read_csv)
+```
+
+```{r}
+lapply(files_as_list, n_trials)
+```
+This looks good.
+
+```{r}
+lapply(files_as_list, fam_id_not_in_range)
+```
+```{r}
+lapply(files_as_list, nov_id_not_valid)
+```
+
+```{r}
+validate_numeric_ratings <- function(data_file) {
+  numeric_rating_out_of_range(data_file, 'happy_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'sad_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'scared-rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'angry_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'run', 0, 2)
+  numeric_rating_out_of_range(data_file, 'order', 0, 4)
+  numeric_rating_out_of_range(data_file, 'how_feel', 0, 5)
+  numeric_rating_out_of_range(data_file, 'know_speaker', 0, 2)
+}
+
+lapply(files_as_list, validate_numeric_ratings)
+```
+
+So, this scheme does not tell me the problematic lines and files.
+Let's return a data structure with the file name, and problematic file contents instead.
+
+```{r}
+numeric_rating_out_of_range <- function(data_file, field_name, 
+                                        min_val, max_val) {
+  this_field <- data_file[, field_name == names(data_file)]
+  in_range <- (this_field >= min_val) & (this_field <= max_val)
+  
+  if (sum(!in_range)) {
+    message(paste0(field_name, ' NOT OK'))
+    return(data_file[!in_range,])
+  } else {
+    return(paste0(field_name, ' OK'))
+  }
+}
+
+file_index <- 10
+numeric_rating_out_of_range(files_as_list[[file_index]], 'sad_rating', 0, 4)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'scared-rating', 0, 4)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'angry_rating', 0, 4)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'run', 0, 2)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'order', 0, 4)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'how_feel', 0, 5)
+numeric_rating_out_of_range(files_as_list[[file_index]], 'know_speaker', 0, 2)
+```
+
+This looks like it will work, but I have a concern about the 'nesting' of the list structure.
+
+```{r}
+validate_numeric_ratings <- function(data_file) {
+  numeric_rating_out_of_range(data_file, 'happy_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'sad_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'scared-rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'angry_rating', 0, 4)
+  numeric_rating_out_of_range(data_file, 'run', 0, 2)
+  numeric_rating_out_of_range(data_file, 'order', 0, 4)
+  numeric_rating_out_of_range(data_file, 'how_feel', 0, 5)
+  numeric_rating_out_of_range(data_file, 'know_speaker', 0, 2)
+}
+
+lapply(files_as_list, validate_numeric_ratings)
+```
+
