@@ -17,7 +17,14 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 
+if (!require(tidyverse)){
+  install.packages('tidyverse')
+}
 library(tidyverse)
+
+if (!require(ggplot2)){
+  install.packages('ggplot2')
+}
 library(ggplot2)
 ```
 
@@ -42,10 +49,14 @@ flist <- list.files(path = data_dir,
                           pattern = "^rating")
 ```
 
+# Process the data files
+
+## Data frame for each file
+
 Create a data.frame by parsing the file names.
 
 ```{r}
-peep_II_files <- data_frame(fn = flist,
+peep_II_files <- tibble(fn = flist,
                             fam_id = stringr::str_sub(flist, 8, 10),
                             test_HHMM = stringr::str_sub(flist, 23, 26),
                             run_num = stringr::str_sub(flist, 32, 32),
@@ -55,38 +66,47 @@ peep_II_files
 
 Now we can 'spread' the data to see if rows with different `test_HHMM` have different `run_num` numbers (they should) but the *same* `order_num` number.
 
-
 ```{r}
-test_runs_orders <- function(id, df) {
-  this_subset <- dplyr::filter(df, fam_id == id)
-  
-  message(paste0('QA on family ', id))
-  
+test_runs_orders <- function(this_id, in_df, verbose = FALSE) {
+  if (verbose) message(paste0('QA on family ', fam_id))
+
+  out_df <- NULL
+  this_subset <- dplyr::filter(in_df, fam_id == this_id)
+
+  out_df$fam_id <- unique(this_subset$fam_id)
+  out_df$n_files <- dim(this_subset)[1]
+
   # Two data files
   if (dim(this_subset)[1] == 2) {
-    message('Two data files: \tPASS')
+    out_df$two_files <- TRUE
   } else {
-    warning('NOT Two data files: \tFAIL')
-  }
-  
-  if (this_subset$test_HHMM[1] != this_subset$test_HHMM[2]) {
-    message('Test times different: \tPASS')
-    } else {
-    warning('Time times identical: \tFAIL')
-    }
-  
-  if(this_subset$run_num[1] != this_subset$run_num[2]) {
-    message('Run numbers not equal: \tPASS')
-  } else {
-    warning('Run numbers equal: \tFAIL\n')
+    out_df$two_files <- FALSE
   }
 
-  if(this_subset$order_num[1] == this_subset$order_num[2]) {
-    message('Order numbers equal: \tPASS')
+  # Test times differ
+  if (this_subset$test_HHMM[1] != this_subset$test_HHMM[2]) {
+    out_df$diff_times <- TRUE
+    } else {
+    out_df$diff_times <- FALSE
+    }
+
+  # Run numbers unequal?
+  if(this_subset$run_num[1] != this_subset$run_num[2]) {
+    out_df$diff_run_num <- TRUE
   } else {
-    warning('Order numbers not equal: \tFAIL')
+    out_df$diff_run_num <- FALSE
   }
-  message("\n----------------\n")
+
+  # Order numbers equal?
+  if(this_subset$order_num[1] == this_subset$order_num[2]) {
+    out_df$equal_order_num <- TRUE
+  } else {
+    out_df$equal_order_num <- FALSE
+  }
+  
+  out_df$pass_QA <- with(out_df, two_files & diff_times & diff_run_num & equal_order_num)
+  
+  return(out_df)
 }
 
 test_runs_orders('032', peep_II_files)
@@ -96,11 +116,27 @@ Run this QA script across all fam_id's.
 
 ```{r}
 fam_ids <- unique(peep_II_files$fam_id)
-lapply(fam_ids, test_runs_orders, peep_II_files)
+peep_II_qa_list <- lapply(fam_ids, test_runs_orders, peep_II_files)
+peep_II_qa_df <- Reduce(function(df1, df2) merge(df1, df2, all = TRUE), peep_II_qa_list)
+str(peep_II_qa_df)
 ```
 
-On the basis of this evaluation, `fam_id` 019 and `fam_id` 032 must be dealt with separately.
-I suggest we take the first of the two rating runs.
+The following families pass all file-level QA elements: 
+
+`r peep_II_qa_df$fam_id[peep_II_qa_df$pass_QA == TRUE]`
+
+The following do not pass all QA elements and must be treated separately:
+
+`r (no_pass <- peep_II_qa_df$fam_id[peep_II_qa_df$pass_QA == FALSE])`
+
+Let's look at these more closely.
+
+```{r}
+peep_II_qa_df[no_pass,]
+```
+
+It looks like we did *not* collect data for both runs 1 and 2.
+I suggest we take the first of the two rating runs for these participants.
 
 ## Within file QA
 
@@ -125,154 +161,209 @@ Each data file should have the following characteristics:
 I will write functions for each of these criteria. 
 
 ```{r}
-n_trials <- function(data_file) {
+has_32_trials <- function(data_file) {
   dim(data_file)[1] == 33 # 32 trials + header
 }
 
 full_flist <- list.files(path = data_dir, 
                           pattern = "^rating", full.names = TRUE)
-n_trials(read_csv(full_flist[1]))
+has_32_trials(read_csv(full_flist[1]))
 ```
 
 ```{r}
-missing_fields <- function(data_file) {
+no_missing_fields <- function(data_file) {
   all_fields <- c('fam_id', 'nov_id', 'run', 'order', 'sound_index', 'snd_file', 'happy_rating', 'angry_rating', 'sad_rating', 'scared-rating', 'how_feel', 'know_speaker')
+  
   if (sum(!(all_fields %in% names(data_file)))) {
-    return(all_fields[!(all_fields %in% names(data_file))])
+    return(FALSE)
   } else {
-    return(NA)
+    return(TRUE)
   }
 }
 
-missing_fields(read_csv(full_flist[3]))
+no_missing_fields(read_csv(full_flist[2]))
 ```
 
 ```{r}
-fam_id_not_in_range <- function(data_file) {
+fam_id_in_range <- function(data_file) {
   in_range <- (as.numeric(data_file$fam_id) >= 0 & as.numeric(data_file$fam_id) <= 999)
   if(sum(!(in_range))) {
-    return(data_file$fam_id[!in_range])
+    return(FALSE)
   } else {
-    return(NA)
+    return(TRUE)
   }
 }
 
-fam_id_not_in_range(read_csv(full_flist[1]))
+fam_id_in_range(read_csv(full_flist[1]))
 ```
 
 ```{r}
-nov_id_not_valid <- function(data_file) {
+nov_id_valid <- function(data_file) {
   in_range <- (as.numeric(data_file$nov_id) >= 0 & as.numeric(data_file$nov_id) <= 999)
   not_eq_fam_id <- (as.numeric(data_file$nov_id)) != (as.numeric(data_file$fam_id))
   nov_id_valid <- in_range & not_eq_fam_id
   nov_id_valid
   
   if(sum(!(nov_id_valid))) {
-    return(data_file$nov_id[!nov_id_valid])
+    return(FALSE)
   } else {
-    return(NA)
+    return(TRUE)
   }
 }
 
-nov_id_not_valid(read_csv(full_flist[1]))
+nov_id_valid(read_csv(full_flist[1]))
 ```
 
 ```{r}
-numeric_rating_out_of_range <- function(data_file, field_name, min_val, max_val) {
+numeric_rating_in_range <- function(data_file, field_name, min_val, max_val) {
   this_field <- data_file[, field_name == names(data_file)]
   in_range <- (this_field >= min_val) & (this_field <= max_val)
   
   if (sum(!in_range)) {
-    return(this_field[!in_range,])
+    return(FALSE)
   } else {
-    return(NA)
+    return(TRUE)
   }
 }
 
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'happy_rating', 0, 4)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'sad_rating', 0, 4)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'scared-rating', 0, 4)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'angry_rating', 0, 4)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'run', 0, 2)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'order', 0, 4)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'how_feel', 0, 5)
-numeric_rating_out_of_range(read_csv(full_flist[1]), 'know_speaker', 0, 2)
+numeric_rating_in_range(read_csv(full_flist[1]), 'happy_rating', 0, 4)
+numeric_rating_in_range(read_csv(full_flist[1]), 'sad_rating', 0, 4)
+numeric_rating_in_range(read_csv(full_flist[1]), 'scared-rating', 0, 4)
+numeric_rating_in_range(read_csv(full_flist[1]), 'angry_rating', 0, 4)
+numeric_rating_in_range(read_csv(full_flist[1]), 'run', 0, 2)
+numeric_rating_in_range(read_csv(full_flist[1]), 'order', 0, 4)
+numeric_rating_in_range(read_csv(full_flist[1]), 'how_feel', 0, 5)
+numeric_rating_in_range(read_csv(full_flist[1]), 'know_speaker', 0, 2)
 ```
 
 Now, we are ready to run these across all the files.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 files_as_list <- lapply(full_flist, read_csv)
 ```
 
-```{r}
-lapply(files_as_list, n_trials)
+```{r, warning=FALSE, message=FALSE}
+has_32_list <- lapply(files_as_list, has_32_trials)
+has_32_tr <- unlist(has_32_list)
 ```
+
 This looks good.
 
 ```{r}
-lapply(files_as_list, fam_id_not_in_range)
-```
-```{r}
-lapply(files_as_list, nov_id_not_valid)
+fam_id_list <- lapply(files_as_list, fam_id_in_range)
+fam_id_in_rg <- unlist(fam_id_list)
 ```
 
 ```{r}
-validate_numeric_ratings <- function(data_file) {
-  numeric_rating_out_of_range(data_file, 'happy_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'sad_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'scared-rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'angry_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'run', 0, 2)
-  numeric_rating_out_of_range(data_file, 'order', 0, 4)
-  numeric_rating_out_of_range(data_file, 'how_feel', 0, 5)
-  numeric_rating_out_of_range(data_file, 'know_speaker', 0, 2)
+nov_id_list <- lapply(files_as_list, nov_id_valid)
+nov_id_in_rg <- unlist(nov_id_list)
+```
+
+```{r}
+hap_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'happy_rating', 0, 4)
 }
 
-lapply(files_as_list, validate_numeric_ratings)
-```
-
-So, this scheme does not tell me the problematic lines and files.
-Let's return a data structure with the file name, and problematic file contents instead.
-
-```{r}
-numeric_rating_out_of_range <- function(data_file, field_name, 
-                                        min_val, max_val) {
-  this_field <- data_file[, field_name == names(data_file)]
-  in_range <- (this_field >= min_val) & (this_field <= max_val)
-  
-  if (sum(!in_range)) {
-    message(paste0(field_name, ' NOT OK'))
-    return(data_file[!in_range,])
-  } else {
-    return(paste0(field_name, ' OK'))
-  }
+sad_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'sad_rating', 0, 4)
 }
 
-file_index <- 10
-numeric_rating_out_of_range(files_as_list[[file_index]], 'sad_rating', 0, 4)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'scared-rating', 0, 4)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'angry_rating', 0, 4)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'run', 0, 2)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'order', 0, 4)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'how_feel', 0, 5)
-numeric_rating_out_of_range(files_as_list[[file_index]], 'know_speaker', 0, 2)
-```
-
-This looks like it will work, but I have a concern about the 'nesting' of the list structure.
-
-```{r}
-validate_numeric_ratings <- function(data_file) {
-  numeric_rating_out_of_range(data_file, 'happy_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'sad_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'scared-rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'angry_rating', 0, 4)
-  numeric_rating_out_of_range(data_file, 'run', 0, 2)
-  numeric_rating_out_of_range(data_file, 'order', 0, 4)
-  numeric_rating_out_of_range(data_file, 'how_feel', 0, 5)
-  numeric_rating_out_of_range(data_file, 'know_speaker', 0, 2)
+sca_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'scared-rating', 0, 4)
 }
 
-lapply(files_as_list, validate_numeric_ratings)
+ang_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'angry_rating', 0, 4)
+}
+
+run_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'run', 0, 2)
+}
+
+order_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'order', 0, 4)
+}
+
+how_feel_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'how_feel', 0, 5)
+}
+
+know_speaker_rating_in_rg <- function(fn) {
+  numeric_rating_in_range(fn, 'know_speaker', 0, 2)
+}
 ```
 
+
+```{r}
+hap_list <- lapply(files_as_list, hap_rating_in_rg)
+hap_in_rg <- unlist(hap_list)
+
+sad_list <- lapply(files_as_list, sad_rating_in_rg)
+sad_in_rg <- unlist(sad_list)
+
+sca_list <- lapply(files_as_list, sca_rating_in_rg)
+sca_in_rg <- unlist(sca_list)
+
+ang_list <- lapply(files_as_list, ang_rating_in_rg)
+ang_in_rg <- unlist(ang_list)
+
+run_list <- lapply(files_as_list, run_in_rg)
+run_ok <- unlist(run_list)
+
+order_list <- lapply(files_as_list, order_in_rg)
+order_ok <- unlist(order_list)
+ 
+how_feel_list <- lapply(files_as_list, how_feel_rating_in_rg)
+how_feel_in_rg <- unlist(how_feel_list)
+
+know_speaker_list <- lapply(files_as_list, know_speaker_rating_in_rg)
+know_speaker_in_rg <- unlist(know_speaker_list)
+
+pass_field_value_qa <- hap_in_rg & sad_in_rg & sca_in_rg & ang_in_rg & run_ok & order_ok & how_feel_in_rg & know_speaker_in_rg
+```
+
+Now, let's create unified data frame.
+
+```{r}
+peep_II_files$hap_in_rg <- hap_in_rg
+peep_II_files$sad_in_rg <- sad_in_rg
+peep_II_files$sca_in_rg <- sca_in_rg
+peep_II_files$ang_in_rg <- ang_in_rg
+peep_II_files$run_ok <- run_ok
+peep_II_files$order_ok <- order_ok
+peep_II_files$how_feel_in_rg <- how_feel_in_rg
+peep_II_files$know_speaker_in_rg <- know_speaker_in_rg
+peep_II_files$pass_field_value_qa <- pass_field_value_qa
+```
+
+This means that the following `fam_id`s do *not* pass the complete field value QA screen:
+
+```{r}
+fail_field_value_qa <- !peep_II_files$pass_field_value_qa
+peep_II_files[fail_field_value_qa, c('fam_id', 'run_num', 'know_speaker_in_rg')]
+```
+
+From the individual QA fields, I know that:
+
+`r sum(!peep_II_files$hap_in_rg)` files have problems with the happy rating.
+
+`r sum(!peep_II_files$sad_in_rg)` files have problems with the sad rating.
+
+`r sum(!peep_II_files$sca_in_rg)` files have problems with the scared rating.
+
+`r sum(!peep_II_files$ang_in_rg)` files have problems with the anger rating.
+
+`r sum(!peep_II_files$run_ok)` files have problems with the run order.
+
+`r sum(!peep_II_files$order_ok)` files have problems with the trial order.
+
+`r sum(!peep_II_files$how_feel_in_rg)` files have problems with the 'how feel' rating.
+
+`r sum(!peep_II_files$know_speaker_in_rg)` files have problems with the 'know speaker' rating.
+
+# Export the file-level and participant-level QA files
+
+```{r}
+write_csv(peep_II_qa_df, "data/csv/peep_II_participant_QA.csv")
+write_csv(peep_II_files, "data/csv/peep_II_file_QA.csv")
+```
