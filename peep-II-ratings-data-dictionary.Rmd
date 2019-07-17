@@ -79,7 +79,7 @@ Ratings 2 and greater indicated increasing intensity of perceived happiness.
 
 | 1 | 2  | 3 | 4 |
 | :-: | :-: | :-: | :-: | :-: |
-| <img src="img/hap-1.jpg" width=150px/> | <img src="img/hap-2.jpg", width=150px/> | <img src="img/hap-3.jpg", width=150px/> | <img src="img/hap-4.jpg", width=150px/> |
+| <img src="img/hap-1.jpg" width=150px/> | <img src="img/hap-2.jpg" width=150px/> | <img src="img/hap-3.jpg" width=150px/> | <img src="img/hap-4.jpg" width=150px/> |
 
 ### `angry_rating`
 
@@ -89,7 +89,7 @@ Ratings 2 and greater indicated increasing intensity of perceived anger.
 
 | 1 | 2  | 3 | 4 |
 | :-: | :-: | :-: | :-: | :-: |
-| <img src="img/ang-1.jpg" width=150px/> | <img src="img/ang-2.jpg", width=150px/> | <img src="img/ang-3.jpg", width=150px/> | <img src="img/ang-4.jpg", width=150px/> |
+| <img src="img/ang-1.jpg" width=150px/> | <img src="img/ang-2.jpg"  width=150px/> | <img src="img/ang-3.jpg" width=150px/> | <img src="img/ang-4.jpg" width=150px/> |
 
 ### `sad_rating`
 
@@ -99,7 +99,7 @@ Ratings 2 and greater indicated increasing intensity of perceived sadness.
 
 | 1 | 2  | 3 | 4 |
 | :-: | :-: | :-: | :-: | :-: |
-| <img src="img/sad-1.jpg" width=150px/> | <img src="img/sad-2.jpg", width=150px/> | <img src="img/sad-3.jpg", width=150px/> | <img src="img/sad-4.jpg", width=150px/> |
+| <img src="img/sad-1.jpg" width=150px/> | <img src="img/sad-2.jpg" width=150px/> | <img src="img/sad-3.jpg" width=150px/> | <img src="img/sad-4.jpg" width=150px/> |
 
 ### `how_feel`
 
@@ -109,7 +109,7 @@ Images presented were the midscale (intensity = 3) of the happy, sad, and angry 
 
 | Neutral | Happy | Angry | Sad | Scared |
 | :-: | :-: | :-: | :-: | :-: |
-| <img src="img/sad-1.jpg" width=150px/> | <img src="img/hap-3.jpg", width=150px/> | <img src="img/ang-3.jpg", width=150px/> | <img src="img/sad-3.jpg", width=150px/> | <img src="img/sca-3.jpg", width=150px/> |
+| <img src="img/sad-1.jpg" width=150px/> | <img src="img/hap-3.jpg" width=150px/> | <img src="img/ang-3.jpg" width=150px/> | <img src="img/sad-3.jpg" width=150px/> | <img src="img/sca-3.jpg" width=150px/> |
 | 1 | 2 | 3 | 4 | 5 |
 
 ### `know_speaker`
@@ -118,5 +118,15 @@ An integer [1,2] made in response to the question *'Do you know who is being spo
 
 | Yes | No |
 | :-: | :-: |
-| <img src="img/yes-crop.jpg" width=150px/> | <img src="img/no-crop.jpg", width=150px/> |
+| <img src="img/yes-crop.jpg" width=150px/> | <img src="img/no-crop.jpg" width=150px/> |
 | 1 | 2 |
+
+### `scared.rating`
+
+A numeric rating [1,4] in response to the question: *'How SCARED does this sound?'*.
+A rating of one showed the same neutral face as the `happy_rating`, `angry_rating`, and `sad_rating`.
+Ratings 2 and greater indicated increasing intensity.
+
+| 1 | 2  | 3 | 4 |
+| :-: | :-: | :-: | :-: | :-: |
+| <img src="img/sca-1.jpg" width=150px/> | <img src="img/sca-2.jpg" width=150px/> | <img src="img/sca-3.jpg" width=150px/> | <img src="img/sca-4.jpg" width=150px/> |
