@@ -19,4 +19,7 @@ peep2_flist <- list.files(path = peep2_data_dir,
 peep2_df_list <- lapply(peep2_flist, read.csv)
 peep2_df <- Reduce(function(x,y) merge(x,y, all =TRUE), peep2_df_list)
 
-write_csv(peep2_df, path = "data/csv/peep2-ratings.csv")
+peep_2_df <- peep2_df %>%
+  rename(scared_rating = scared.rating)
+
+write_csv(peep_2_df, path = "data/csv/peep-II-ratings.csv")

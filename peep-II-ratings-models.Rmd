@@ -1,0 +1,93 @@
+---
+title: "peep-II-ratings-models"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: hide
+---
+
+# Purpose
+
+1. To explore a series of statistical models of PEEP-II ratings data at the *individual* level.
+
+# Set-up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pkg_list <- c("googlesheets", "googledrive", "tidyverse", "ggplot2", "ggmosaic")
+lapply(pkg_list, library, quietly = TRUE, character.only = TRUE)
+```
+
+# Import data
+
+```{r import-data, message=FALSE}
+source("R/gather_clean_ratings.R")
+source("R/gather_clean_demog.R")
+
+ratings <- clean_peep_II_ratings(gather_peep_II_ratings())
+demog <- clean_peep_II_demog(gather_peep_II_demo())
+ratings_demog <- dplyr::left_join(demog, ratings, by = "fam_id")
+```
+
+Based on the <peep-II-qa.html> findings, we sould consider dropping 019 and 032 from analysis of the `*_rating` data.
+These participants were not tested on the full set of ratings.
+An alternative would be to select one of the two (identical) runs.
+I'm going to drop 019 and 032 for now.
+
+```{r}
+ratings_sub <- ratings_demog %>%
+  filter(!(fam_id %in% c(19, 32)))
+```
+
+Similarly, if we want to examine the `know_speaker` variable, we have to worry about 001 and 003.
+I'm not evaluating that variable now, so we'll keep 001 and 003.
+
+# Set-up nested tibble
+
+Here, I am following the examples in Chapter 20 of the R for Data Science book.
+
+```{r}
+by_fam <- ratings_sub %>%
+  group_by(fam_id) %>%
+  nest()
+```
+
+Now, we can try the by-participant modeling!
+
+```{r}
+happy_model <- function(df) {
+  aov(happy_rating ~ prosody*spkr_fam*script, data = df)
+}
+
+angry_model <- function(df) {
+  aov(angry_rating ~ prosody*spkr_fam*script, data = df)
+}
+
+sad_model <- function(df) {
+  aov(sad_rating ~ prosody*spkr_fam*script, data = df)
+}
+  
+scared_model <- function(df) {
+  aov(scared_rating ~ prosody*spkr_fam*script, data = df)
+}
+
+how_feel_model <- function(df) {
+  aov(how_feel ~ prosody*spkr_fam*script, data = df)
+}
+
+by_fam_mods <- by_fam %>%
+  mutate(., 
+         hap_model = purrr::map(data, happy_model),
+         hap_resids = purrr::map2(data, hap_model, modelr::add_residuals),
+         ang_model = purrr::map(data, angry_model),
+         ang_resids = purrr::map2(data, ang_model, modelr::add_residuals),
+         sad_model = purrr::map(data, sad_model),
+         sad_resids = purrr::map2(data, sad_model, modelr::add_residuals))
+```
