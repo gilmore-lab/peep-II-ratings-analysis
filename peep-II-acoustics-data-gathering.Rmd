@@ -1,0 +1,132 @@
+---
+title: "PEEP II Acoustics Data Gathering"
+author: "Rick O. Gilmore"
+date: "`r Sys.time()`"
+output: 
+  html_notebook:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: show
+---
+
+# Background/Purpose
+
+This notebook describes how to gather the PEEP-II acoustics data, including the formats of data files and fields.
+
+# Set-up
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+pkg_list <- c("tidyverse", "ggplot2", "R.matlab")
+lapply(pkg_list, library, quietly = TRUE, character.only = TRUE)
+```
+
+# Gather
+
+## Explore and document directory structure
+
+The PEEP II acoustics data are stored in `~/Box Sync/b-peep-project Shared/PEEP2 acoustics/`. 
+
+```{r}
+acoustics_dir <- "~/Box Sync/b-peep-project Shared/PEEP2 acoustics/"
+dir(acoustics_dir)
+```
+
+There are separate directories for the individual participants, e.g. `001`.
+
+Peter Moriarity recalls that `015_original` might have been recorded at 96,000 Hz (48,000 Hz was the standard for the rest). This participant may also have required down-sampling/editing to fit within the 10 s/utterance limit.
+
+The contents of the `001` directory is as follows.
+
+```{r}
+dir(paste0(acoustics_dir, "/001"))
+```
+
+I presume that we'll want the `rmsnorm` data, but will check on that with Peter Moriarty.
+
+```{r}
+dir(paste0(acoustics_dir, "/001/rmsnorm"))
+```
+
+These look like the normed audio files.
+Investigating the `data` subfolder, I find the acoustic ratings.
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data"))
+```
+
+Examining the `F0` directory shows the following:
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data/F0"))
+```
+ 
+Drilling down into the F0 directory, we see the following:
+
+```{r}
+list.files(paste0(acoustics_dir, "/001/data/F0/F0/mean"))
+```
+
+## Open `F0.mat` file
+
+There is a MATLAB file `F0.mat` with the raw data.
+To attempt to read it, I installed the `R.matlab` package via `install.packages("R.matlab")`.
+
+```{r read-F0-matlab}
+f0_001 <- R.matlab::readMat(paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"))
+f0_001
+```
+
+Use the `str()` function to summarize the details.
+
+```{r}
+str(f0_001)
+```
+
+This is an 8x4x4 array. 
+There were 4 scripts x 2 versions x 4 target prosodies. 
+That gives $n=32$ exemplars.
+Could the additional data points refer to the F0 for each *utterance* within the exemplar, assuming that there are four utterances/script?
+I'm stuck until I figure this out.
+
+> 2019-07-31-10:48: Peter thinks that the data files have the following structure: 8 scripts x 4 utterances/script x 4 prosodies. The scripts were alphabetical by theme/label, alternating a/b versions: chk-a, chk-b, din-a, din-b, hlp-a, hlp-b, tlk-a, tlk-b. We have an open question about whether the order of the emotions was alphabetical: ang, hap, neu, sad or sem-alphabetical ang, hap, sad, neu.
+
+Once the meaning of the dimensions is clear, then it may be necessary to average the per-utterance values to create a per/script mean and SD, as these were the variables we use in the JECP manuscript.
+
+For now, let's open one of the other acoustics data files.
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data"))
+```
+
+Let's try the harmonic to noise ratio or HNR.
+
+## Opening HNR files
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data/HNR"))
+```
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data/HNR/HNR"))
+```
+
+Let's examine `MEAN`.
+
+```{r}
+dir(paste0(acoustics_dir, "/001/data/HNR/HNR/MEAN"))
+```
+
+This is a `.mat` file we can open.
+
+```{r}
+HNR_mean_001 <- R.matlab::readMat(paste0(acoustics_dir, "/001/data/HNR/HNR/MEAN/HNR.mat"))
+HNR_mean_001
+str(HNR_mean_001)
+```
+
+This also has an 8x4x4 array structure.
