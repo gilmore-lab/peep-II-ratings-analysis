@@ -7,6 +7,8 @@ The MATLAB code for presenting audio recordings both in the magnet and outside i
 
 ## Contents
 
+- [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-acoustics-data-dictionary.html) for the acoustics data dictionary.
+- [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-aratings-data-dictionary.html) for the ratings data dictionary.
 - [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-acoustics-data-gathering.nb.html) describing workflow for generating tidy data files from MATLAB originals.
 - [HTML report](https://https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-data-dictionary.html) with data file specifications and definitions. [Rmd](https://https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-data-dictionary.Rmd)
 - [HTML report](https://gilmore-lab.github.io/peep-II-ratings-analysis/peep-II-ratings-visualization-individual.html) showing plots of individual participants. [Rmd](https://github.com/gilmore-lab/peep-II-ratings-analysis/peep-II-ratings-visualization-individual.Rmd)

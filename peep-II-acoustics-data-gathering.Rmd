@@ -88,16 +88,10 @@ str(f0_001)
 ```
 
 This is an 8x4x4 array. 
-There were 4 scripts x 2 versions x 4 target prosodies. 
-That gives $n=32$ exemplars.
-Could the additional data points refer to the F0 for each *utterance* within the exemplar, assuming that there are four utterances/script?
-I'm stuck until I figure this out.
-
-> 2019-07-31-10:48: Peter thinks that the data files have the following structure: 8 scripts x 4 utterances/script x 4 prosodies. The scripts were alphabetical by theme/label, alternating a/b versions: chk-a, chk-b, din-a, din-b, hlp-a, hlp-b, tlk-a, tlk-b. We have an open question about whether the order of the emotions was alphabetical: ang, hap, neu, sad or sem-alphabetical ang, hap, sad, neu.
-
-Once the meaning of the dimensions is clear, then it may be necessary to average the per-utterance values to create a per/script mean and SD, as these were the variables we use in the JECP manuscript.
+The dimensions are as follows: 8 scripts \{chk-a, chk-b, din-a, din-b, hlp-a, hlp-b, tlk-a, tlk-b\} x 4 emotions \{ang, hap, neu, sad\}, x 4 utterances/script. 
 
 For now, let's open one of the other acoustics data files.
+
 
 ```{r}
 dir(paste0(acoustics_dir, "/001/data"))
@@ -130,3 +124,222 @@ str(HNR_mean_001)
 ```
 
 This also has an 8x4x4 array structure.
+
+# Steps toward a reproducible import scheme
+
+## Exploring how to flatten these arrays
+
+Let's create a test array with the same dimensionality, but named, so that we can explore how to properly flatten it.
+
+```{r}
+acoustics_test <- array(data = 1:(8*4*4), dim = c(8,4,4))
+scr <- rep(rep(c("chk-a", "chk-b", "din-a", "din-b", "hlp-a", "hlp-b", "tlk-a", "tlk-b"), times = 4), times = 4)
+emo <- rep(rep(c("ang", "hap", "neu", "sad"), each = 8), times = 4)
+utt <- rep(1:4, each = 32)
+df <- as.data.frame(acoustics_test)
+df
+```
+
+So, I need to create one variable from the columns `V1` to `V16`.
+
+```{r}
+v <- NULL
+for (i in 1:16) {
+  v <- c(v, df[,i])
+}
+v
+```
+
+Now, I put the pieces together to form a data frame.
+
+```{r}
+acoustics_df <- data.frame(measure = v, script = scr, prosody = emo, utterance = utt)
+```
+
+## Making an import function
+
+A function that should work on the `F0` (mean) and `HNR` files is as follows:
+
+```{r define-import-function}
+extract_acoustics_dat <- function(fn) {
+  ac_mat <- R.matlab::readMat(fn)
+  
+  # Check dimensionality  
+  # if ((!dim(ac_mat)[1] == 8) | 
+  #   (!dim(ac_mat)[2] == 4) |
+  #   (!dim(ac_mat)[3] == 4)) {
+  #   stop("File is not 8x4x4 in dimension")
+  # }
+  
+  # Convert to data frame
+  ac_dat <- as.data.frame(ac_mat$data)
+  
+  # Convert data to 1D array
+  v <- NULL
+  for (i in 1:16) {
+    v <- c(v, ac_dat[,i])
+  }
+  
+  # Define values for nominal variables
+  scr <- rep(rep(c("chk-a", "chk-b", "din-a", "din-b", 
+                   "hlp-a", "hlp-b", "tlk-a", "tlk-b"), times = 4), times = 4)
+  emo <- rep(rep(c("ang", "hap", "neu", "sad"), each = 8), times = 4)
+  utt <- rep(1:4, each = 32)
+  
+  # Assemble data frame and return
+  data.frame(data.frame(measure = v, script = scr, 
+                        prosody = emo, utterance = utt))
+             
+}
+```
+
+Test the function.
+
+```{r test-import-function}
+extract_acoustics_dat(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"))
+```
+
+It makes more sense to sort by utterance within script.
+
+```{r}
+d <- extract_acoustics_dat(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"))
+d %>% dplyr::arrange(script, prosody, utterance)
+```
+
+Let's incorporate this into the function.
+
+```{r update-extract-function}
+extract_matlab_acoustics_dat <- function(fn) {
+  ac_mat <- R.matlab::readMat(fn)
+  
+  # Check dimensionality  
+  # if ((!dim(ac_mat)[1] == 8) | 
+  #   (!dim(ac_mat)[2] == 4) |
+  #   (!dim(ac_mat)[3] == 4)) {
+  #   stop("File is not 8x4x4 in dimension")
+  # }
+  
+  # Convert to data frame
+  ac_dat <- as.data.frame(ac_mat$data)
+  
+  # Convert data to 1D array
+  v <- NULL
+  for (i in 1:16) {
+    v <- c(v, ac_dat[,i])
+  }
+  
+  # Define values for nominal variables
+  scr <- rep(rep(c("chk-a", "chk-b", "din-a", "din-b", 
+                   "hlp-a", "hlp-b", "tlk-a", "tlk-b"), times = 4), times = 4)
+  emo <- rep(rep(c("ang", "hap", "neu", "sad"), each = 8), times = 4)
+  utt <- rep(1:4, each = 32)
+  
+  # Assemble data frame and return
+  df <- data.frame(data.frame(measure = v, script = scr, 
+                        prosody = emo, utterance = utt))
+  dplyr::arrange(df, script, prosody, utterance)          
+}
+
+extract_matlab_acoustics_dat(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"))
+```
+
+That looks good.
+An improvement would be to provide the measure name.
+
+```{r}
+extract_matlab_acoustics_dat_2 <- function(fn, measure_nm = "measure") {
+  ac_mat <- R.matlab::readMat(fn)
+  
+  # Check dimensionality  
+  # if ((!dim(ac_mat)[1] == 8) | 
+  #   (!dim(ac_mat)[2] == 4) |
+  #   (!dim(ac_mat)[3] == 4)) {
+  #   stop("File is not 8x4x4 in dimension")
+  # }
+  
+  # Convert to data frame
+  ac_dat <- as.data.frame(ac_mat$data)
+  
+  # Convert data to 1D array
+  v <- NULL
+  for (i in 1:16) {
+    v <- c(v, ac_dat[,i])
+  }
+  
+  # Define values for nominal variables
+  scr <- rep(rep(c("chk-a", "chk-b", "din-a", "din-b", 
+                   "hlp-a", "hlp-b", "tlk-a", "tlk-b"), times = 4), times = 4)
+  emo <- rep(rep(c("ang", "hap", "neu", "sad"), each = 8), times = 4)
+  utt <- rep(1:4, each = 32)
+  
+  # Assemble data frame and return
+  df <- data.frame(data.frame(measure = v, script = scr, 
+                        prosody = emo, utterance = utt))
+  # Rename measure (hacky)
+  df[measure_nm] <- df$measure
+  df <- dplyr::select(df, -measure)
+  
+  dplyr::arrange(df, script, prosody, utterance)
+}
+
+extract_matlab_acoustics_dat_2(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"), "F0_mean")
+
+```
+ 
+ This all works, except for the dimension checking.
+ I will put this into an R file (`R/gather_clean_acoustics.R`) for sourcing.
+ 
+## Plot F0 just for fun
+ 
+```{r plot-001-f0-mean}
+f0_001_df <- extract_matlab_acoustics_dat_2(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"), "F0_mean")
+
+f0_001_df %>%
+  ggplot(.) +
+  aes(utterance, F0_mean, color = script) +
+  geom_line() +
+  facet_grid(script ~ prosody) +
+  ylab("Mean F0 (Hz)") +
+  ggtitle("Participant 001: F0 mean by prosody and utterance")
+```
+ 
+## Parse `script` into `script` and `order` variables
+
+The ratings data have separate `script` and `order` variables.
+
+```{r}
+f0_001_df %>%
+  tidyr::separate(., script, into = c("script", "order"))
+```
+
+## Import and test functions from `R/gather_clean_acoustics.R`
+
+```{r source-gather-clean}
+source("R/gather_clean_acoustics.R")
+```
+
+Now run `test_gather_clean_acoustics()` with the default parameters (`fam_id` == "001" and the "F0_mean" variable).
+
+```{r run-test-gather}
+test_gather_clean_acoustics()
+```
+
+Try it with the `HNR_mean` and a different participant.
+
+```{r run-test-gather-non-default}
+test_gather_clean_acoustics(this_fam = "002", this_measure_nm = "HNR_mean")
+```
+
+# Next steps
+
+1. ~~Parse the `script` variable into separate `script` and `order` variables analogous to the ratings data.~~
+    - 2019-08-01: Completed.
+    
+2. Create functions to recursively scour the acoustics data structure and generate files for each measure for each participant.
+    - 2019-08-01: Partially done, see `R/gather_clean_acoustics.R`.
+    
+3. Save the files for each participant with a sensible naming scheme like `001_F0_mean.csv` or `001_HNR.csv`.
+
+4. Create combined files across participants by measure.
+
+5. Create summary (mean value across utterances) data for each recording as this is the data in the JECP paper. Focus on the `F0_mean`, standard deviation of F0, and speech rate variables. Confirm with Peter how to calculate speech rate.

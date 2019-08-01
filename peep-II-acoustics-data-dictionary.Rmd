@@ -1,0 +1,102 @@
+---
+title: "PEEP-II Acoustics Data Dictionary"
+author: "Rick O. Gilmore & Peter Moriarty"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_paged: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+
+A set of MATLAB scripts and PRAAT were used to normalize and analyze each participant's utterances.
+The files are stored in a shared Box folder: `~/Box Sync/b-peep-project Shared/PEEP2 acoustics/`
+
+# Acoustics files
+
+The derived acoustics measures are stored as MATLAB (.mat) arrays.
+Separate directories for each participant can be found in `~/Box Sync/b-peep-project Shared/PEEP2 acoustics/`, and the individual acoustic measures in directories within each participant's directory.
+For example, `~/Box Sync/b-peep-project Shared/PEEP2 acoustics/data/F0` provides access to the mean F0 (fundamental frequency) measure.
+
+Unless otherwise indicated below, the acoustic measure files are 8x4x4 MATLAB arrays of floating point/real numbers with dimensions as follows: 8 scripts \{chk-a, chk-b, din-a, din-b, hlp-a, hlp-b, tlk-a, tlk-b\} x 4 emotions \{ang, hap, neu, sad\}, x 4 utterances/script.
+
+## Acoustics file name format
+
+# Acoustic measures
+
+## `Duration`
+
+### `Proportion Pauses`
+
+### `Syllabic Rate`
+
+### `Voiced Duration`
+
+## `F0`
+
+Fundamental frequency in Hertz (Hz) per utterance.
+
+### `CONTOUR`
+
+### `MEAN`
+
+Mean fundamental frequency in Hertz (Hz) per utterance.
+
+Example: `~/Box Sync/b-peep-project Shared/PEEP2 acoustics/data/F0/F0/mean/F0.mat`
+
+## `Formants`
+
+### `F1`
+
+### `F1bw`
+
+### `F2`
+
+### `F2bw`
+
+### `F3`
+
+### `F3bw`
+
+## `HNR`
+
+Harmonic to noise ratio.
+
+### `CONTOURS`
+
+### `MEAN`
+
+## `Intensity`
+
+### `Intensity`
+
+### `Intensity_norm`
+
+### `Intensity_raw`
+
+## `LTAS`
+
+### `Alpha`
+
+### `Hammarberg`
+
+### `HF500`
+
+### `HF1000`
+
+### `Spectral COG`
+
+## `VoiceQuality`
+
+### `Autocorrelation`
+
+### `Shimmer`
