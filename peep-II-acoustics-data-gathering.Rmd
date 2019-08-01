@@ -289,7 +289,7 @@ extract_matlab_acoustics_dat_2(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/
  This all works, except for the dimension checking.
  I will put this into an R file (`R/gather_clean_acoustics.R`) for sourcing.
  
-## Plot F0 just for fun
+## Plot `F0_mean` just for fun
  
 ```{r plot-001-f0-mean}
 f0_001_df <- extract_matlab_acoustics_dat_2(fn = paste0(acoustics_dir, "/001/data/F0/F0/mean/F0.mat"), "F0_mean")
@@ -298,7 +298,7 @@ f0_001_df %>%
   ggplot(.) +
   aes(utterance, F0_mean, color = script) +
   geom_line() +
-  facet_grid(script ~ prosody) +
+  facet_grid(. ~ prosody) +
   ylab("Mean F0 (Hz)") +
   ggtitle("Participant 001: F0 mean by prosody and utterance")
 ```
@@ -342,4 +342,4 @@ test_gather_clean_acoustics(this_fam = "002", this_measure_nm = "HNR_mean")
 
 4. Create combined files across participants by measure.
 
-5. Create summary (mean value across utterances) data for each recording as this is the data in the JECP paper. Focus on the `F0_mean`, standard deviation of F0, and speech rate variables. Confirm with Peter how to calculate speech rate.
+5. Create summary (mean value across utterances) data for each recording as this is the data in the JECP paper. Focus on the `F0_mean`, standard deviation of F0, and speech rate variables. Confirm with Peter how to calculate standard deviation of F0 (by file/recording SD?), and speech rate.
